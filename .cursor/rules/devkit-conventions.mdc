@@ -1,0 +1,43 @@
+---
+description: DevKit 项目的技术栈约定和编码规范
+alwaysApply: true
+---
+
+# DevKit 项目约定
+
+## 技术栈
+
+- Tauri v2 + React 19 + TypeScript + Tailwind CSS v4 + shadcn/ui
+- 路径别名：`@/` 映射到 `src/`
+- 包管理器：pnpm
+
+## 项目结构
+
+- `src/types.ts` — 全局类型（Page 等）
+- `src/lib/tools.ts` — 工具注册表（分类、搜索、元数据）
+- `src/components/<模块名>/` — 按功能模块组织组件（json、base64、url、jwt、uuid、hash、regex、time、home、color、diff、text、css-unit、cron、number-base、http-status、image、mock）
+- `src/components/ui/` — shadcn/ui 基础组件（不手动修改）
+- `src/components/layout/` — 布局组件（Sidebar、ThemeToggle）
+- `src/lib/` — 纯逻辑工具函数，不包含 React 组件
+- `src/hooks/` — 自定义 React hooks
+
+## 新增工具规范
+
+- 新增工具时，必须同时在 `src/lib/tools.ts` 的 `TOOL_CATEGORIES` 中注册
+- 工具组件接受可选的 `initialContent?: string` prop 以支持智能识别跳转
+- 剪贴板检测逻辑在 `src/lib/clipboard-detect.ts` 中维护
+- Page 类型定义在 `src/types.ts`，新增页面需同步更新
+
+## 编码规范
+
+- 纯逻辑函数放在 `src/lib/` 中，组件只负责 UI 和状态绑定
+- 使用 `useCallback` 包裹事件处理函数
+- 中文界面，所有用户可见文本使用中文
+- 优先使用原生 API（Web Crypto、Intl 等），避免不必要的第三方库
+- 使用 lucide-react 图标库，不使用内联 SVG
+
+## 主题
+
+- 亮暗主题基于 HTML 根元素 `dark` class 切换
+- 使用 CSS 变量（shadcn 主题系统），不硬编码颜色值
+- 持久化到 localStorage key `devkit-theme`

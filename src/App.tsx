@@ -1,50 +1,90 @@
-import { useState } from "react";
-import reactLogo from "./assets/react.svg";
-import { invoke } from "@tauri-apps/api/core";
-import "./App.css";
+import { useState, useCallback } from "react";
+import { Sidebar } from "@/components/layout/Sidebar";
+import { Dashboard } from "@/components/home/Dashboard";
+import { JsonFormatter } from "@/components/json/JsonFormatter";
+import { Base64Tool } from "@/components/base64/Base64Tool";
+import { UrlTool } from "@/components/url/UrlTool";
+import { JwtDecoder } from "@/components/jwt/JwtDecoder";
+import { UuidGenerator } from "@/components/uuid/UuidGenerator";
+import { HashGenerator } from "@/components/hash/HashGenerator";
+import { RegexTester } from "@/components/regex/RegexTester";
+import { TimeTools } from "@/components/time/TimeTools";
+import { ColorTool } from "@/components/color/ColorTool";
+import { DiffTool } from "@/components/diff/DiffTool";
+import { TextTool } from "@/components/text/TextTool";
+import { CssUnitConverter } from "@/components/css-unit/CssUnitConverter";
+import { CronTool } from "@/components/cron/CronTool";
+import { NumberBaseTool } from "@/components/number-base/NumberBaseTool";
+import { HttpStatusTool } from "@/components/http-status/HttpStatusTool";
+import { ImageTool } from "@/components/image/ImageTool";
+import { MockTool } from "@/components/mock/MockTool";
+import { CursorRulesTool } from "@/components/cursor-rules/CursorRulesTool";
+import { useTheme } from "@/hooks/useTheme";
+import { useRecentTools } from "@/hooks/useRecentTools";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import type { Page } from "@/types";
 
 function App() {
-  const [greetMsg, setGreetMsg] = useState("");
-  const [name, setName] = useState("");
+  const [activePage, setActivePage] = useState<Page>("home");
+  const [initialContent, setInitialContent] = useState("");
+  const { theme, toggleTheme } = useTheme();
+  const { recent, recordUsage } = useRecentTools();
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    return localStorage.getItem("devkit-sidebar-collapsed") === "true";
+  });
 
-  async function greet() {
-    // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-    setGreetMsg(await invoke("greet", { name }));
-  }
+  const handleNavigate = useCallback(
+    (page: Page, content?: string) => {
+      setActivePage(page);
+      setInitialContent(content ?? "");
+      recordUsage(page);
+    },
+    [recordUsage],
+  );
+
+  const handleToggleSidebar = useCallback(() => {
+    setSidebarCollapsed((prev) => {
+      const next = !prev;
+      localStorage.setItem("devkit-sidebar-collapsed", String(next));
+      return next;
+    });
+  }, []);
 
   return (
-    <main className="container">
-      <h1>Welcome to Tauri + React</h1>
-
-      <div className="row">
-        <a href="https://vite.dev" target="_blank">
-          <img src="/vite.svg" className="logo vite" alt="Vite logo" />
-        </a>
-        <a href="https://tauri.app" target="_blank">
-          <img src="/tauri.svg" className="logo tauri" alt="Tauri logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <p>Click on the Tauri, Vite, and React logos to learn more.</p>
-
-      <form
-        className="row"
-        onSubmit={(e) => {
-          e.preventDefault();
-          greet();
-        }}
-      >
-        <input
-          id="greet-input"
-          onChange={(e) => setName(e.currentTarget.value)}
-          placeholder="Enter a name..."
+    <TooltipProvider>
+      <div className="flex h-screen min-w-[640px] overflow-hidden bg-background text-foreground">
+        <Sidebar
+          activePage={activePage}
+          onNavigate={handleNavigate}
+          recent={recent}
+          theme={theme}
+          onToggleTheme={toggleTheme}
+          collapsed={sidebarCollapsed}
+          onToggleCollapse={handleToggleSidebar}
         />
-        <button type="submit">Greet</button>
-      </form>
-      <p>{greetMsg}</p>
-    </main>
+        <main className="min-h-0 min-w-0 flex-1 overflow-auto">
+          {activePage === "home" && <Dashboard recent={recent} onNavigate={handleNavigate} />}
+          {activePage === "json" && <JsonFormatter initialContent={initialContent} />}
+          {activePage === "base64" && <Base64Tool initialContent={initialContent} />}
+          {activePage === "url" && <UrlTool initialContent={initialContent} />}
+          {activePage === "jwt" && <JwtDecoder initialContent={initialContent} />}
+          {activePage === "uuid" && <UuidGenerator />}
+          {activePage === "hash" && <HashGenerator />}
+          {activePage === "regex" && <RegexTester />}
+          {activePage === "time" && <TimeTools />}
+          {activePage === "color" && <ColorTool />}
+          {activePage === "diff" && <DiffTool />}
+          {activePage === "text" && <TextTool />}
+          {activePage === "css-unit" && <CssUnitConverter />}
+          {activePage === "cron" && <CronTool />}
+          {activePage === "number-base" && <NumberBaseTool />}
+          {activePage === "http-status" && <HttpStatusTool />}
+          {activePage === "image" && <ImageTool />}
+          {activePage === "mock" && <MockTool />}
+          {activePage === "cursor-rules" && <CursorRulesTool />}
+        </main>
+      </div>
+    </TooltipProvider>
   );
 }
 

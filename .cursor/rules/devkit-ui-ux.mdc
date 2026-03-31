@@ -1,0 +1,46 @@
+---
+description: DevKit 桌面工具箱项目的 UI/UX 通用规范，确保交互合理、布局健壮
+globs: src/**/*.tsx
+alwaysApply: false
+---
+
+# DevKit UI/UX 规范
+
+## 布局与滚动
+
+- 整体布局使用 `h-screen` + `overflow-hidden`；内容区使用 `min-h-0 flex-1 overflow-auto`
+- 任何 flex 子级需要内部滚动时，必须同时设置 `min-h-0`（或 `min-w-0`）打破默认的 `min-height: auto`
+- textarea / 代码编辑区域使用原生 `<textarea>` 并设置固定高度（`h-full`），**不要**使用 shadcn 的 `field-sizing-content` 自动撑高行为
+- 可滚动容器的父级必须有明确的高度约束（`h-full` / `flex-1` + `min-h-0`），形成完整的高度链
+
+```tsx
+// 正确：flex 链 + min-h-0 确保子级可滚动
+<div className="flex h-full flex-col">
+  <header>固定区域</header>
+  <div className="min-h-0 flex-1 overflow-auto">可滚动内容</div>
+</div>
+
+// 错误：缺少 min-h-0，内容会撑破父容器
+<div className="flex h-full flex-col">
+  <div className="flex-1 overflow-auto">不会滚动</div>
+</div>
+```
+
+## 交互反馈
+
+- 所有复制操作必须有视觉反馈：按钮文字短暂变为「已复制」，1.2~1.5 秒后恢复
+- 异步操作（网络请求、文件操作）需要 loading 状态
+- 错误信息使用 `Badge variant="destructive"` 显示，成功后自动清除
+- 表单输入支持 Enter 键触发主操作
+
+## 组件选择
+
+- 需要固定高度 + 滚动的文本区域：使用原生 `<textarea>` 而非 shadcn `Textarea`
+- 结果展示中的值需要可复制：每个值旁提供小型复制按钮
+- 工具型页面的操作按钮放在内容区顶部，保持可见
+
+## 通用样式
+
+- 等宽内容（JSON、时间戳、代码）使用 `font-mono`
+- 输入区域关闭拼写检查：`spellCheck={false}`
+- Card 内部的 flex 布局需要 `overflow-hidden` 防止内容溢出圆角
