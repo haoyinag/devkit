@@ -17,4 +17,8 @@ export type Page =
   | "http-status"
   | "image"
   | "mock"
-  | "cursor-rules";
+  | "cursor-rules"
+  | "markdown-doc"
+  | "git-push"
+  | "git-branch"
+  | "git-cheatsheet";

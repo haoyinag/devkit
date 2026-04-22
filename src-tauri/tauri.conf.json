@@ -14,11 +14,13 @@
       {
         "title": "DevKit - \u5f00\u53d1\u5de5\u5177\u7bb1",
         "width": 1100,
-        "height": 750
+        "height": 750,
+        "minWidth": 640,
+        "minHeight": 480
       }
     ],
     "security": {
-      "csp": null
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' asset: https://asset.localhost data: blob:; font-src 'self' data:; connect-src ipc: http://ipc.localhost"
     }
   },
   "bundle": {

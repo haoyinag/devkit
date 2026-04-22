@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,10 +9,13 @@ const TEXTAREA_CLASS =
 
 function useCopy() {
   const [copied, setCopied] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  useEffect(() => () => clearTimeout(timerRef.current), []);
   const copy = useCallback((text: string) => {
     navigator.clipboard.writeText(text).then(() => {
       setCopied(true);
-      setTimeout(() => setCopied(false), 1200);
+      clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(() => setCopied(false), 1200);
     });
   }, []);
   return { copied, copy };
@@ -206,6 +209,19 @@ function CaseTab() {
 
 // ── Tab: Dedup & Sort ──
 
+/** 按首次出现顺序去除重复字符（含代理对安全遍历） */
+function dedupeCharsPreserveOrder(s: string): string {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const ch of s) {
+    if (!seen.has(ch)) {
+      seen.add(ch);
+      out.push(ch);
+    }
+  }
+  return out.join("");
+}
+
 function DedupSortTab() {
   const [input, setInput] = useState("");
   const [output, setOutput] = useState("");
@@ -213,16 +229,20 @@ function DedupSortTab() {
   const inputLines = useMemo(() => input.split("\n"), [input]);
   const outputLines = useMemo(() => (output ? output.split("\n") : []), [output]);
 
-  const apply = useCallback(
+  const applyLines = useCallback(
     (fn: (lines: string[]) => string[]) => {
       setOutput(fn(inputLines).join("\n"));
     },
     [inputLines],
   );
 
-  const actions = useMemo(
+  const applyWhole = useCallback((fn: (text: string) => string) => {
+    setOutput(fn(input));
+  }, [input]);
+
+  const lineActions = useMemo(
     () => [
-      { label: "去重", fn: (lines: string[]) => [...new Set(lines)] },
+      { label: "行去重", fn: (lines: string[]) => [...new Set(lines)] },
       { label: "排序 A-Z", fn: (lines: string[]) => [...lines].sort((a, b) => a.localeCompare(b)) },
       { label: "排序 Z-A", fn: (lines: string[]) => [...lines].sort((a, b) => b.localeCompare(a)) },
       {
@@ -239,28 +259,69 @@ function DedupSortTab() {
     [],
   );
 
+  const charActions = useMemo(
+    () => [
+      {
+        label: "字符去重",
+        fn: (text: string) => dedupeCharsPreserveOrder(text),
+      },
+      {
+        label: "字符排序 A-Z",
+        fn: (text: string) => [...text].sort((a, b) => a.localeCompare(b)).join(""),
+      },
+      {
+        label: "字符排序 Z-A",
+        fn: (text: string) => [...text].sort((a, b) => b.localeCompare(a)).join(""),
+      },
+    ],
+    [],
+  );
+
   return (
     <div className="space-y-4">
+      <p className="text-xs text-muted-foreground">
+        <span className="font-medium text-foreground">按行</span>
+        ：多行时用换行分隔；仅一行时「行去重 / 行排序」结果常与原文相同。
+        <span className="ml-2 font-medium text-foreground">按字符</span>
+        ：对整段文字逐字去重或排序（适合无换行的长串）。
+      </p>
       <textarea
         className={TEXTAREA_CLASS}
         rows={6}
         value={input}
         onChange={(e) => setInput(e.target.value)}
-        placeholder="每行一个条目"
+        placeholder="多行时每行一条；单行长串请用下方「字符去重」等"
         spellCheck={false}
       />
-      <div className="flex flex-wrap items-center gap-2">
-        {actions.map((a) => (
-          <Button
-            key={a.label}
-            variant="outline"
-            size="sm"
-            className="h-7 text-xs"
-            onClick={() => apply(a.fn)}
-          >
-            {a.label}
-          </Button>
-        ))}
+      <div className="space-y-2">
+        <p className="text-xs font-medium text-muted-foreground">按行</p>
+        <div className="flex flex-wrap items-center gap-2">
+          {lineActions.map((a) => (
+            <Button
+              key={a.label}
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs"
+              onClick={() => applyLines(a.fn)}
+            >
+              {a.label}
+            </Button>
+          ))}
+        </div>
+        <p className="text-xs font-medium text-muted-foreground">按字符（整段）</p>
+        <div className="flex flex-wrap items-center gap-2">
+          {charActions.map((a) => (
+            <Button
+              key={a.label}
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs"
+              onClick={() => applyWhole(a.fn)}
+            >
+              {a.label}
+            </Button>
+          ))}
+        </div>
       </div>
       {output && (
         <div className="flex items-center gap-3 text-sm text-muted-foreground">

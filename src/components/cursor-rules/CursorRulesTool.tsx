@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -25,6 +25,7 @@ import {
   Globe,
   Eye,
   FileCode,
+  AlertTriangle,
 } from "lucide-react";
 import { RuleMarkdownBody } from "@/components/cursor-rules/RuleMarkdownBody";
 
@@ -33,10 +34,12 @@ export function CursorRulesTool() {
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [missingScanPaths, setMissingScanPaths] = useState<string[]>([]);
   const [scanPaths, setScanPaths] = useState<string[]>(getSavedScanPaths);
   const [newPath, setNewPath] = useState("");
-  const [showSettings, setShowSettings] = useState(false);
+  const [showSettings, setShowSettings] = useState(true);
   const [copied, setCopied] = useState(false);
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
   /** 正文展示：渲染 Markdown 或原始源码 */
   const [bodyView, setBodyView] = useState<"render" | "source">("render");
@@ -45,6 +48,10 @@ export function CursorRulesTool() {
     setLoading(true);
     setError(null);
     try {
+      const missing = await invoke<string[]>("workspace_roots_missing", {
+        roots: scanPaths,
+      });
+      setMissingScanPaths(missing);
       const data = await invoke<CursorRuleFile[]>("scan_cursor_rules", {
         workspaceRoots: scanPaths,
       });
@@ -55,6 +62,7 @@ export function CursorRulesTool() {
       });
     } catch (err) {
       setError(String(err));
+      setMissingScanPaths([]);
     } finally {
       setLoading(false);
     }
@@ -93,10 +101,13 @@ export function CursorRulesTool() {
     [scanPaths],
   );
 
+  useEffect(() => () => clearTimeout(copyTimerRef.current), []);
+
   const handleCopyPath = useCallback(async (text: string) => {
     await navigator.clipboard.writeText(text);
     setCopied(true);
-    setTimeout(() => setCopied(false), 1200);
+    clearTimeout(copyTimerRef.current);
+    copyTimerRef.current = setTimeout(() => setCopied(false), 1200);
   }, []);
 
   const toggleGroup = useCallback((key: string) => {
@@ -147,9 +158,21 @@ export function CursorRulesTool() {
             {scanPaths.map((p) => (
               <div
                 key={p}
-                className="flex items-center gap-2 rounded-md bg-background px-3 py-1.5 text-sm"
+                className={cn(
+                  "flex items-center gap-2 rounded-md bg-background px-3 py-1.5 text-sm",
+                  missingScanPaths.includes(p) &&
+                    "border border-amber-500/40 bg-amber-500/5",
+                )}
               >
-                <FolderOpen size={14} className="shrink-0 text-muted-foreground" />
+                {missingScanPaths.includes(p) ? (
+                  <AlertTriangle
+                    size={14}
+                    className="shrink-0 text-amber-600 dark:text-amber-500"
+                    aria-hidden
+                  />
+                ) : (
+                  <FolderOpen size={14} className="shrink-0 text-muted-foreground" />
+                )}
                 <span className="min-w-0 flex-1 truncate font-mono text-xs">{p}</span>
                 <button
                   onClick={() => handleRemovePath(p)}
@@ -189,6 +212,36 @@ export function CursorRulesTool() {
         </div>
       )}
 
+      {missingScanPaths.length > 0 && (
+        <div
+          className="border-b border-amber-500/30 bg-amber-500/10 px-6 py-3 dark:bg-amber-500/5"
+          role="status"
+        >
+          <div className="flex gap-2">
+            <AlertTriangle
+              size={18}
+              className="mt-0.5 shrink-0 text-amber-600 dark:text-amber-500"
+              aria-hidden
+            />
+            <div className="min-w-0 text-sm">
+              <p className="font-medium text-amber-950 dark:text-amber-100">
+                部分工作区路径不存在
+              </p>
+              <p className="mt-1 text-amber-900/90 dark:text-amber-200/90">
+                以下目录在本机找不到，已从扫描中跳过。请改为实际存在的路径，或从列表中移除后刷新。
+              </p>
+              <ul className="mt-2 list-inside list-disc space-y-0.5 font-mono text-xs text-amber-950/80 dark:text-amber-100/80">
+                {missingScanPaths.map((p) => (
+                  <li key={p} className="break-all">
+                    {p}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Main Content */}
       <div className="flex min-h-0 flex-1">
         {/* Left: Rule List */}
@@ -203,7 +256,11 @@ export function CursorRulesTool() {
                 <ScrollText size={32} className="mx-auto mb-2 text-muted-foreground/50" />
                 <p className="text-sm text-muted-foreground">未找到规则文件</p>
                 <p className="mt-1 text-xs text-muted-foreground/70">
-                  请检查扫描路径设置
+                  {scanPaths.length === 0
+                    ? "可在上方添加工作区目录，或依赖全局 ~/.cursor/rules"
+                    : missingScanPaths.length > 0
+                      ? "请修正无效路径或查看顶部提示"
+                      : "请检查扫描路径下是否存在 .cursor/rules/*.mdc"}
                 </p>
               </div>
             ) : (

@@ -1,0 +1,62 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">DevKit Neon Dog Head</title>
+  <desc id="desc">DevKit 图标：几何科技风狗头，蓝绿渐变高亮</desc>
+  <defs>
+    <linearGradient id="bg" x1="24" y1="20" x2="232" y2="236" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0a1022" />
+      <stop offset="1" stop-color="#071a2b" />
+    </linearGradient>
+    <linearGradient id="line" x1="56" y1="42" x2="206" y2="204" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#3b82f6" />
+      <stop offset="1" stop-color="#22c55e" />
+    </linearGradient>
+    <linearGradient id="fill" x1="72" y1="62" x2="188" y2="186" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0f172a" />
+      <stop offset="1" stop-color="#0b2234" />
+    </linearGradient>
+    <filter id="glow" x="-35%" y="-35%" width="170%" height="170%">
+      <feGaussianBlur stdDeviation="2.6" result="soft" />
+      <feMerge>
+        <feMergeNode in="soft" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect x="8" y="8" width="240" height="240" rx="52" fill="url(#bg)" />
+
+  <g filter="url(#glow)">
+    <polygon
+      points="74,188 62,130 88,84 110,60 124,84 142,64 168,82 194,130 182,188 146,200 110,200"
+      fill="url(#fill)"
+      opacity="0.9"
+    />
+    <path
+      d="M74 188
+         L62 130
+         L88 84
+         L110 60
+         L124 84
+         L142 64
+         L168 82
+         L194 130
+         L182 188
+         L146 200
+         L110 200
+         Z"
+      fill="none"
+      stroke="url(#line)"
+      stroke-width="8"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+    <path d="M98 122 L118 108 L124 128 L110 142 Z" fill="none" stroke="url(#line)" stroke-width="5" stroke-linejoin="round" />
+    <path d="M150 118 L136 106 L130 128 L142 140 Z" fill="none" stroke="url(#line)" stroke-width="5" stroke-linejoin="round" />
+    <path d="M112 160 L124 148 L136 160 L124 168 Z" fill="none" stroke="url(#line)" stroke-width="5" stroke-linejoin="round" />
+    <path d="M98 178 L124 184 L150 178" fill="none" stroke="url(#line)" stroke-width="4" stroke-linecap="round" />
+    <circle cx="114" cy="126" r="3.4" fill="#dbeafe" opacity="0.95" />
+    <circle cx="136" cy="126" r="3.4" fill="#dbeafe" opacity="0.95" />
+    <circle cx="114" cy="126" r="1.5" fill="#020617" opacity="0.96" />
+    <circle cx="136" cy="126" r="1.5" fill="#020617" opacity="0.96" />
+  </g>
+</svg>

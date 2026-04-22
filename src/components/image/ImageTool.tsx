@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, useDeferredValue } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -11,7 +11,7 @@ import {
   Trash2,
 } from "lucide-react";
 
-interface ImageData {
+interface ImageMeta {
   file: File;
   dataUrl: string;
   width: number;
@@ -46,17 +46,21 @@ function getBaseName(filename: string): string {
 }
 
 export function ImageTool() {
-  const [imageData, setImageData] = useState<ImageData | null>(null);
-  const [base64Url, setBase64Url] = useState("");
+  const [imageData, setImageData] = useState<ImageMeta | null>(null);
   const [jpegQuality, setJpegQuality] = useState(0.85);
   const [webpQuality, setWebpQuality] = useState(0.85);
+  const deferredJpeg = useDeferredValue(jpegQuality);
+  const deferredWebp = useDeferredValue(webpQuality);
   const [converted, setConverted] = useState<ConvertedFormat[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [copyLabel, setCopyLabel] = useState<string | null>(null);
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const dropRef = useRef<HTMLDivElement>(null);
+
+  const base64Url = imageData?.dataUrl ?? "";
 
   const loadImage = useCallback((file: File) => {
     if (!file.type.startsWith("image/")) {
@@ -70,7 +74,6 @@ export function ImageTool() {
       const img = new Image();
       img.onload = () => {
         setImageData({ file, dataUrl, width: img.naturalWidth, height: img.naturalHeight });
-        setBase64Url(dataUrl);
         setConverted([]);
       };
       img.onerror = () => setError("图片加载失败");
@@ -121,13 +124,14 @@ export function ImageTool() {
     return () => document.removeEventListener("paste", handlePaste);
   }, [loadImage]);
 
-  const convertImage = useCallback(() => {
+  useEffect(() => {
     if (!imageData) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
-
+    let cancelled = false;
     const img = new Image();
     img.onload = () => {
+      if (cancelled) return;
       canvas.width = img.naturalWidth;
       canvas.height = img.naturalHeight;
       const ctx = canvas.getContext("2d")!;
@@ -136,8 +140,8 @@ export function ImageTool() {
 
       const formats: { format: string; mimeType: string; quality?: number }[] = [
         { format: "PNG", mimeType: "image/png" },
-        { format: "JPEG", mimeType: "image/jpeg", quality: jpegQuality },
-        { format: "WebP", mimeType: "image/webp", quality: webpQuality },
+        { format: "JPEG", mimeType: "image/jpeg", quality: deferredJpeg },
+        { format: "WebP", mimeType: "image/webp", quality: deferredWebp },
       ];
 
       const results: ConvertedFormat[] = formats.map(({ format, mimeType, quality }) => {
@@ -149,21 +153,21 @@ export function ImageTool() {
         return { format, mimeType, dataUrl, size };
       });
 
-      setConverted(results);
+      if (!cancelled) setConverted(results);
     };
     img.src = imageData.dataUrl;
-  }, [imageData, jpegQuality, webpQuality]);
-
-  useEffect(() => {
-    if (imageData) convertImage();
-  }, [imageData, convertImage]);
+    return () => { cancelled = true; };
+  }, [imageData, deferredJpeg, deferredWebp]);
 
   const handleCopy = useCallback((text: string, key: string) => {
     navigator.clipboard.writeText(text).then(() => {
       setCopyLabel(key);
-      setTimeout(() => setCopyLabel(null), 1500);
+      clearTimeout(copyTimerRef.current);
+      copyTimerRef.current = setTimeout(() => setCopyLabel(null), 1500);
     });
   }, []);
+
+  useEffect(() => () => clearTimeout(copyTimerRef.current), []);
 
   const handleDownload = useCallback(
     (dataUrl: string, ext: string) => {
@@ -175,7 +179,6 @@ export function ImageTool() {
 
   const handleClear = useCallback(() => {
     setImageData(null);
-    setBase64Url("");
     setConverted([]);
     setError(null);
     if (fileInputRef.current) fileInputRef.current.value = "";

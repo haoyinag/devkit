@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,6 +11,8 @@ export function UuidGenerator() {
   const [noDashes, setNoDashes] = useState(false);
   const [uuids, setUuids] = useState<string[]>([]);
   const [copyLabel, setCopyLabel] = useState("复制全部");
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  useEffect(() => () => clearTimeout(copyTimerRef.current), []);
 
   const generate = useCallback(() => {
     const list: string[] = [];
@@ -26,7 +28,8 @@ export function UuidGenerator() {
   const copyAll = useCallback(() => {
     navigator.clipboard.writeText(uuids.join("\n")).then(() => {
       setCopyLabel("已复制");
-      setTimeout(() => setCopyLabel("复制全部"), 1500);
+      clearTimeout(copyTimerRef.current);
+      copyTimerRef.current = setTimeout(() => setCopyLabel("复制全部"), 1500);
     });
   }, [uuids]);
 

@@ -1,10 +1,10 @@
 import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { calculateTimeDiff, type TimeDiff } from "@/lib/time-utils";
+import { calculateTimeDiff, nowLocalMinuteStr, type TimeDiff } from "@/lib/time-utils";
+import { DateTimeMinuteInput } from "./DateTimeMinuteInput";
 
 export function TimeDiffCalculator() {
   const [date1, setDate1] = useState("");
@@ -22,16 +22,9 @@ export function TimeDiffCalculator() {
     }
   }, [date1, date2]);
 
-  const handleNow = useCallback(
-    (setter: (v: string) => void) => {
-      const now = new Date();
-      const pad = (n: number) => String(n).padStart(2, "0");
-      setter(
-        `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`,
-      );
-    },
-    [],
-  );
+  const handleNow = useCallback((setter: (v: string) => void) => {
+    setter(nowLocalMinuteStr());
+  }, []);
 
   return (
     <Card>
@@ -43,12 +36,7 @@ export function TimeDiffCalculator() {
           <div className="space-y-2">
             <Label>开始时间</Label>
             <div className="flex gap-2">
-              <Input
-                value={date1}
-                onChange={(e) => setDate1(e.target.value)}
-                placeholder="如 2024-01-01 00:00:00"
-                className="font-mono"
-              />
+              <DateTimeMinuteInput value={date1} onChange={setDate1} />
               <Button
                 onClick={() => handleNow(setDate1)}
                 variant="outline"
@@ -62,12 +50,7 @@ export function TimeDiffCalculator() {
           <div className="space-y-2">
             <Label>结束时间</Label>
             <div className="flex gap-2">
-              <Input
-                value={date2}
-                onChange={(e) => setDate2(e.target.value)}
-                placeholder="如 2024-12-31 23:59:59"
-                className="font-mono"
-              />
+              <DateTimeMinuteInput value={date2} onChange={setDate2} />
               <Button
                 onClick={() => handleNow(setDate2)}
                 variant="outline"

@@ -54,6 +54,35 @@ export function localDateStr(date: Date): string {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
 }
 
+/** 将本地日期时间格式化为 `YYYY-MM-DD HH:mm:00`（秒归零） */
+export function dateToMinuteCanonical(d: Date): string {
+  const x = new Date(d.getTime());
+  x.setSeconds(0, 0);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${x.getFullYear()}-${pad(x.getMonth() + 1)}-${pad(x.getDate())} ${pad(x.getHours())}:${pad(x.getMinutes())}:00`;
+}
+
+/** 本地当前时间，秒固定为 00（与分钟级日期选择器一致） */
+export function nowLocalMinuteStr(): string {
+  return dateToMinuteCanonical(new Date());
+}
+
+/** `YYYY-MM-DD HH:mm(:ss)?` → `YYYY-MM-DDTHH:mm`，供 `input[type=datetime-local]` 使用 */
+export function dateStrToDatetimeLocalValue(s: string): string {
+  const d = new Date(s.trim());
+  if (isNaN(d.getTime())) return "";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+/** `datetime-local` 的值 → `YYYY-MM-DD HH:mm:00` */
+export function datetimeLocalValueToCanonical(s: string): string {
+  if (!s.trim()) return "";
+  const d = new Date(s);
+  if (isNaN(d.getTime())) return "";
+  return dateToMinuteCanonical(d);
+}
+
 export interface TimeRange {
   start: Date;
   end: Date;

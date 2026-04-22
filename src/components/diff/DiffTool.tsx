@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -134,6 +134,8 @@ export function DiffTool() {
   const [diffResult, setDiffResult] = useState<DiffLine[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  useEffect(() => () => clearTimeout(copyTimerRef.current), []);
 
   const handleCompare = useCallback(() => {
     setError(null);
@@ -213,7 +215,8 @@ export function DiffTool() {
       .join("\n");
     navigator.clipboard.writeText(text);
     setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
+    clearTimeout(copyTimerRef.current);
+    copyTimerRef.current = setTimeout(() => setCopied(false), 1500);
   }, [diffResult]);
 
   const stats = diffResult ? calcStats(diffResult) : null;

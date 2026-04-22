@@ -22,6 +22,42 @@ export const TOOL_CATEGORIES: ToolCategory[] = [
     ],
   },
   {
+    id: "workflow",
+    label: "工作流",
+    tools: [
+      {
+        id: "git-push",
+        label: "Git 推送助手",
+        description: "专注提交与推送：pull、暂存、commit、push",
+        keywords: ["git", "push", "提交", "推送", "rebase", "autostash", "暂存", "工作流", "桌面", "gui"],
+      },
+      {
+        id: "git-branch",
+        label: "Git 分支助手",
+        description: "专注分支管理：查看、新建、切换、远程跟踪",
+        keywords: ["git", "branch", "分支", "切换", "新建", "远程", "origin", "工作流", "桌面", "gui"],
+      },
+      {
+        id: "git-cheatsheet",
+        label: "Git 速查",
+        description: "常用 Git 命令与组合说明（含示例）",
+        keywords: ["git", "速查", "命令", "cheatsheet", "commit", "push", "pull", "rebase", "merge", "stash", "工作流"],
+      },
+    ],
+  },
+  {
+    id: "docs",
+    label: "文档",
+    tools: [
+      {
+        id: "markdown-doc",
+        label: "Markdown 文档",
+        description: "编辑与预览，适合 README、接口说明、笔记",
+        keywords: ["markdown", "md", "文档", "笔记", "readme", "编辑", "预览", "gfm"],
+      },
+    ],
+  },
+  {
     id: "converters",
     label: "转换器",
     tools: [

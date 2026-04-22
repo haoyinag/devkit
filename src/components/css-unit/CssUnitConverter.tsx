@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Copy, Check, Settings, Ruler, Table, Grid3X3 } from "lucide-react";
 
@@ -111,6 +111,8 @@ export function CssUnitConverter() {
   });
 
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  useEffect(() => () => clearTimeout(copyTimerRef.current), []);
 
   const recalculate = useCallback(
     (sourceUnit: UnitKey, raw: string) => {
@@ -161,7 +163,8 @@ export function CssUnitConverter() {
   const handleCopy = useCallback((text: string, key: string) => {
     navigator.clipboard.writeText(text).then(() => {
       setCopiedKey(key);
-      setTimeout(() => setCopiedKey(null), 1200);
+      clearTimeout(copyTimerRef.current);
+      copyTimerRef.current = setTimeout(() => setCopiedKey(null), 1200);
     });
   }, []);
 

@@ -6,7 +6,8 @@ import { TOOL_CATEGORIES, ALL_TOOLS, type ToolInfo } from "@/lib/tools";
 import { detectContent, type Detection } from "@/lib/clipboard-detect";
 import type { Page } from "@/types";
 import {
-  ArrowUp, ClipboardPaste, X, ExternalLink,
+  ArrowUp, ClipboardPaste, X, ExternalLink, Sparkles, Blocks, History, FolderKanban,
+  Repeat2, Scale, Zap, Type, Clock3, MousePointer2, Workflow,
 } from "lucide-react";
 
 interface Props {
@@ -14,13 +15,14 @@ interface Props {
   onNavigate: (page: Page, content?: string) => void;
 }
 
-const CATEGORY_ICONS: Record<string, string> = {
-  converters: "🔄",
-  formatters: "📐",
-  generators: "⚡",
-  text: "📝",
-  time: "⏰",
-  cursor: "🖱️",
+const CATEGORY_ICONS: Record<string, React.ElementType> = {
+  converters: Repeat2,
+  formatters: Scale,
+  generators: Zap,
+  text: Type,
+  time: Clock3,
+  cursor: MousePointer2,
+  workflow: Workflow,
 };
 
 export function Dashboard({ recent, onNavigate }: Props) {
@@ -83,16 +85,34 @@ export function Dashboard({ recent, onNavigate }: Props) {
   const hasText = clipText.trim().length > 0;
 
   return (
-    <div className="flex h-full flex-col gap-6 overflow-y-auto p-6">
-      <div>
-        <h2 className="text-2xl font-bold tracking-tight">DevKit 工具箱</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          粘贴内容自动识别类型，或从下方选择工具
-        </p>
+    <div className="flex h-full flex-col gap-5 overflow-y-auto bg-background p-6 md:p-7">
+      <div className="bg-brand-gradient-soft rounded-2xl border border-border/70 p-5 shadow-elev-1">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h2 className="text-2xl font-semibold tracking-tight">
+              <span className="text-brand-gradient">DevKit 工具箱</span>
+            </h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              粘贴内容自动识别类型，或从下方选择工具
+            </p>
+          </div>
+          <Badge variant="secondary" className="bg-brand-gradient gap-1.5 rounded-full px-3 py-1 text-xs text-primary-foreground">
+            <Sparkles size={12} />
+            Phase 1 UI
+          </Badge>
+        </div>
       </div>
 
       {/* Smart Detection */}
-      <div className="rounded-xl border border-input shadow-sm transition-colors focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50 dark:bg-input/30">
+      <Card className="border-border/70 bg-brand-gradient-soft shadow-elev-1">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-base font-semibold">
+            <Blocks size={16} className="text-muted-foreground" />
+            智能识别
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-0">
+          <div className="overflow-hidden rounded-xl border border-border/70 bg-background transition-colors">
         <textarea
           ref={textareaRef}
           value={clipText}
@@ -108,33 +128,37 @@ export function Dashboard({ recent, onNavigate }: Props) {
           }}
           placeholder="输入或粘贴内容，自动识别类型（JSON / JWT / Base64 / URL / 时间戳 / UUID）"
           rows={2}
-          className="block w-full resize-none bg-transparent px-4 py-3 font-mono text-sm outline-none placeholder:text-muted-foreground"
+          className="block w-full resize-none bg-transparent px-4 py-3 font-mono text-sm placeholder:text-muted-foreground"
           style={{ minHeight: 60 }}
           spellCheck={false}
         />
 
         {/* Toolbar — structurally below textarea, never hidden */}
-        <div className="space-y-2 border-t border-border/40 bg-muted/40 px-3 py-2">
+        <div className="space-y-2 border-t border-border/60 bg-surface-2/70 px-3 py-2.5">
           {/* Action row */}
-          <div className="flex items-center gap-1.5">
-            <button
+          <div className="flex items-center gap-2">
+            <Button
               onClick={handleReadClipboard}
-              className="flex shrink-0 items-center gap-1 rounded-md px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+              variant="ghost"
+              size="sm"
+              className="h-8 shrink-0 gap-1 px-2.5 text-xs text-muted-foreground hover:bg-background hover:text-foreground"
               title="读取剪贴板"
             >
               <ClipboardPaste size={14} />
               粘贴
-            </button>
+            </Button>
 
             {hasText && (
-              <button
+              <Button
                 onClick={handleClear}
-                className="flex shrink-0 items-center gap-1 rounded-md px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                variant="ghost"
+                size="sm"
+                className="h-8 shrink-0 gap-1 px-2.5 text-xs text-muted-foreground hover:bg-background hover:text-foreground"
                 title="清空"
               >
                 <X size={14} />
                 清空
-              </button>
+              </Button>
             )}
 
             <div className="min-w-0 flex-1" />
@@ -148,7 +172,7 @@ export function Dashboard({ recent, onNavigate }: Props) {
             <button
               onClick={handleSubmit}
               disabled={!hasText}
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground transition-opacity disabled:opacity-30"
+              className="bg-brand-gradient flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-primary-foreground shadow-elev-1 transition-opacity disabled:opacity-30"
               title="识别 (Ctrl+Enter)"
             >
               <ArrowUp size={16} />
@@ -157,7 +181,7 @@ export function Dashboard({ recent, onNavigate }: Props) {
 
           {/* Detection result row — separate line, never competes for space */}
           {detection && (
-            <div className="flex flex-wrap items-center gap-2 rounded-lg bg-background px-3 py-2">
+            <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border/60 bg-background px-3 py-2">
               <Badge variant="secondary" className="shrink-0 text-xs">
                 {detection.type.toUpperCase()}
               </Badge>
@@ -177,33 +201,47 @@ export function Dashboard({ recent, onNavigate }: Props) {
           )}
         </div>
       </div>
+        </CardContent>
+      </Card>
 
       {/* Recent */}
       {recentTools.length > 0 && (
-        <div>
-          <h3 className="mb-3 text-sm font-medium text-muted-foreground">最近使用</h3>
-          <div className="flex flex-wrap gap-2">
+        <Card className="border-border/70 bg-surface-1 shadow-elev-1">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base font-semibold">
+              <History size={16} className="text-muted-foreground" />
+              最近使用
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-2">
             {recentTools.map((t) => (
               <Button
                 key={t.id}
                 variant="outline"
                 size="sm"
+                className="border-border/70 bg-background hover:bg-surface-2"
                 onClick={() => onNavigate(t.id)}
               >
                 {t.label}
               </Button>
             ))}
           </div>
-        </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* All Tools */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {TOOL_CATEGORIES.map((cat) => (
-          <Card key={cat.id}>
+          <Card key={cat.id} className="border-border/70 bg-surface-1 shadow-elev-1">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">
-                {CATEGORY_ICONS[cat.id] || ""} {cat.label}
+              <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+                {(() => {
+                  const Icon = CATEGORY_ICONS[cat.id] || FolderKanban;
+                  return <Icon size={14} className="text-muted-foreground" />;
+                })()}
+                {cat.label}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-1">
@@ -211,10 +249,10 @@ export function Dashboard({ recent, onNavigate }: Props) {
                 <button
                   key={tool.id}
                   onClick={() => onNavigate(tool.id)}
-                  className="flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-sm transition-colors hover:bg-accent"
+                  className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition-colors hover:bg-surface-2"
                 >
                   <span className="font-medium">{tool.label}</span>
-                  <span className="ml-2 shrink-0 text-xs text-muted-foreground">{tool.description}</span>
+                  <span className="ml-2 shrink-0 text-xs text-muted-foreground/90">{tool.description}</span>
                 </button>
               ))}
             </CardContent>

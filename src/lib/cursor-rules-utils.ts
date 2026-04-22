@@ -68,9 +68,9 @@ const STORAGE_KEY = "devkit-cursor-scan-paths";
 export function getSavedScanPaths(): string[] {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
-    return saved ? JSON.parse(saved) : ["D:\\work\\code"];
+    return saved ? JSON.parse(saved) : [];
   } catch {
-    return ["D:\\work\\code"];
+    return [];
   }
 }
 

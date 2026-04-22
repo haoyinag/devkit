@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -59,6 +59,8 @@ export function NumberBaseTool() {
   });
   const [baseError, setBaseError] = useState("");
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  useEffect(() => () => clearTimeout(copyTimerRef.current), []);
 
   const [bitA, setBitA] = useState("");
   const [bitB, setBitB] = useState("");
@@ -74,7 +76,8 @@ export function NumberBaseTool() {
     if (!text) return;
     navigator.clipboard.writeText(text).then(() => {
       setCopiedKey(key);
-      setTimeout(() => setCopiedKey(null), 1200);
+      clearTimeout(copyTimerRef.current);
+      copyTimerRef.current = setTimeout(() => setCopiedKey(null), 1200);
     });
   }, []);
 

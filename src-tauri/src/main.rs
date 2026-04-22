@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    devkit_temp_lib::run()
+    devkit_lib::run()
 }

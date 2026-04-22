@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect } from "react";
+import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -111,6 +111,7 @@ export function JsonFormatter({ initialContent }: Props) {
   const [jsonPath, setJsonPath] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [copyLabel, setCopyLabel] = useState("复制结果");
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const [viewMode, setViewMode] = useState<ViewMode>("text");
 
   useEffect(() => {
@@ -164,11 +165,14 @@ export function JsonFormatter({ initialContent }: Props) {
     }
   }, [input, jsonPath]);
 
+  useEffect(() => () => clearTimeout(copyTimerRef.current), []);
+
   const handleCopy = useCallback(() => {
     if (output) {
       navigator.clipboard.writeText(output).then(() => {
         setCopyLabel("已复制");
-        setTimeout(() => setCopyLabel("复制结果"), 1500);
+        clearTimeout(copyTimerRef.current);
+        copyTimerRef.current = setTimeout(() => setCopyLabel("复制结果"), 1500);
       });
     }
   }, [output]);
@@ -178,12 +182,12 @@ export function JsonFormatter({ initialContent }: Props) {
   }, []);
 
   return (
-    <div className="flex h-full flex-col gap-4 p-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold tracking-tight">JSON 工具</h2>
+    <div className="tool-page-shell">
+      <div className="tool-page-header">
+        <h2 className="tool-page-title">JSON 工具</h2>
       </div>
 
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="tool-page-actions">
         <Button onClick={handleFormat} size="sm">格式化</Button>
         <Button onClick={handleMinify} variant="secondary" size="sm">压缩</Button>
         <div className="flex items-center gap-2">
@@ -203,13 +207,13 @@ export function JsonFormatter({ initialContent }: Props) {
         <Button onClick={handleCopy} variant="ghost" size="sm" disabled={!output}>{copyLabel}</Button>
         <Button onClick={handleClear} variant="ghost" size="sm">清空</Button>
 
-        <div className="ml-auto flex items-center rounded-lg bg-muted p-0.5">
+        <div className="ml-auto flex items-center rounded-lg bg-surface-2 p-0.5">
           {(["text", "highlight", "tree"] as ViewMode[]).map((m) => (
             <button
               key={m}
               onClick={() => setViewMode(m)}
               className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
-                viewMode === m ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                viewMode === m ? "bg-background text-foreground shadow-elev-1" : "text-muted-foreground hover:text-foreground"
               }`}
             >
               {{ text: "文本", highlight: "高亮", tree: "树形" }[m]}
@@ -220,44 +224,44 @@ export function JsonFormatter({ initialContent }: Props) {
 
       {error && <Badge variant="destructive" className="w-fit">{error}</Badge>}
 
-      <div className="grid min-h-0 flex-1 grid-cols-2 gap-4">
-        <div className="flex flex-col overflow-hidden rounded-xl bg-card ring-1 ring-foreground/10">
-          <div className="px-4 pt-3 pb-1">
+      <div className="tool-dual-grid">
+        <div className="tool-panel">
+          <div className="tool-panel-label">
             <span className="text-sm font-medium text-muted-foreground">输入</span>
           </div>
-          <div className="min-h-0 flex-1 px-4 pb-4">
+          <div className="tool-panel-body">
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder='粘贴 JSON，如 {"name": "DevKit"}'
-              className="block h-full w-full resize-none rounded-lg border border-input bg-transparent px-3 py-2 font-mono text-sm outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
+              className="tool-input-area"
               spellCheck={false}
             />
           </div>
         </div>
 
-        <div className="flex flex-col overflow-hidden rounded-xl bg-card ring-1 ring-foreground/10">
-          <div className="px-4 pt-3 pb-1">
+        <div className="tool-panel">
+          <div className="tool-panel-label">
             <span className="text-sm font-medium text-muted-foreground">输出</span>
           </div>
-          <div className="min-h-0 flex-1 overflow-auto px-4 pb-4">
+          <div className="tool-panel-body overflow-auto">
             {viewMode === "text" && (
               <textarea
                 value={output}
                 readOnly
                 placeholder="处理结果将显示在这里"
-                className="block h-full w-full resize-none rounded-lg border border-input bg-transparent px-3 py-2 font-mono text-sm outline-none placeholder:text-muted-foreground dark:bg-input/30"
+                className="tool-input-area"
                 spellCheck={false}
               />
             )}
             {viewMode === "highlight" && (
               <pre
-                className="h-full overflow-auto whitespace-pre-wrap rounded-lg border border-input bg-transparent p-3 font-mono text-sm dark:bg-input/30"
+                className="h-full overflow-auto whitespace-pre-wrap rounded-lg border border-border/70 bg-background p-3 font-mono text-sm"
                 dangerouslySetInnerHTML={{ __html: highlightedHtml || '<span class="text-muted-foreground">处理结果将显示在这里</span>' }}
               />
             )}
             {viewMode === "tree" && (
-              <div className="h-full overflow-auto rounded-lg border border-input bg-transparent p-3 dark:bg-input/30">
+              <div className="h-full overflow-auto rounded-lg border border-border/70 bg-background p-3">
                 {parsedOutput !== null ? (
                   <TreeNode value={parsedOutput} depth={0} />
                 ) : (

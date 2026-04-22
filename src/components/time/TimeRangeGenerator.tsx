@@ -1,6 +1,5 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -9,7 +8,9 @@ import {
   localDateStr,
   getTimeRangePreset,
   dateStringToTimestamps,
+  nowLocalMinuteStr,
 } from "@/lib/time-utils";
+import { DateTimeMinuteInput } from "./DateTimeMinuteInput";
 
 const PRESETS = [
   { id: "today", label: "今天" },
@@ -34,10 +35,13 @@ interface RangeResult {
 
 function CopyBtn({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  useEffect(() => () => clearTimeout(timerRef.current), []);
   const handleCopy = useCallback(() => {
     navigator.clipboard.writeText(text).then(() => {
       setCopied(true);
-      setTimeout(() => setCopied(false), 1200);
+      clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(() => setCopied(false), 1200);
     });
   }, [text]);
 
@@ -112,7 +116,7 @@ export function TimeRangeGenerator() {
   }, [startStr, endStr, computeResult]);
 
   const handleNow = useCallback((setter: (v: string) => void) => {
-    setter(localDateStr(new Date()));
+    setter(nowLocalMinuteStr());
   }, []);
 
   const handleCopyAll = useCallback(() => {
@@ -185,11 +189,9 @@ export function TimeRangeGenerator() {
             <div className="space-y-2">
               <Label>开始时间</Label>
               <div className="flex gap-2">
-                <Input
+                <DateTimeMinuteInput
                   value={startStr}
-                  onChange={(e) => setStartStr(e.target.value)}
-                  placeholder="如 2024-01-01 00:00:00"
-                  className="font-mono"
+                  onChange={setStartStr}
                   onKeyDown={(e) => e.key === "Enter" && handleGenerate()}
                 />
                 <Button
@@ -205,11 +207,9 @@ export function TimeRangeGenerator() {
             <div className="space-y-2">
               <Label>结束时间</Label>
               <div className="flex gap-2">
-                <Input
+                <DateTimeMinuteInput
                   value={endStr}
-                  onChange={(e) => setEndStr(e.target.value)}
-                  placeholder="如 2024-12-31 23:59:59"
-                  className="font-mono"
+                  onChange={setEndStr}
                   onKeyDown={(e) => e.key === "Enter" && handleGenerate()}
                 />
                 <Button

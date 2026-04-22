@@ -1,3 +1,6 @@
+mod git_workflow;
+mod http_fetch;
+
 use serde::Serialize;
 use std::fs;
 use std::path::Path;
@@ -74,6 +77,15 @@ fn scan_cursor_rules(workspace_roots: Vec<String>) -> Vec<CursorRuleFile> {
     results
 }
 
+/// 返回 `workspace_roots` 中在本地不存在的路径，供界面提示用户修正扫描配置。
+#[tauri::command]
+fn workspace_roots_missing(roots: Vec<String>) -> Vec<String> {
+    roots
+        .into_iter()
+        .filter(|r| !r.is_empty() && !Path::new(r).exists())
+        .collect()
+}
+
 #[tauri::command]
 fn greet(name: &str) -> String {
     format!("Hello, {}! You've been greeted from Rust!", name)
@@ -82,8 +94,31 @@ fn greet(name: &str) -> String {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
-        .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![greet, scan_cursor_rules])
+        .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_fs::init())
+        .invoke_handler(tauri::generate_handler![
+            greet,
+            scan_cursor_rules,
+            workspace_roots_missing,
+            git_workflow::git_workflow_resolve,
+            git_workflow::git_workflow_refresh,
+            git_workflow::git_workflow_list_branches,
+            git_workflow::git_workflow_switch_branch,
+            git_workflow::git_workflow_create_branch,
+            git_workflow::git_workflow_delete_branch,
+            git_workflow::git_workflow_set_upstream,
+            git_workflow::git_workflow_rename_branch,
+            git_workflow::git_workflow_list_merged_branches,
+            git_workflow::git_workflow_refresh_lists,
+            git_workflow::git_workflow_pull,
+            git_workflow::git_workflow_add_all,
+            git_workflow::git_workflow_restore_staged,
+            git_workflow::git_workflow_add_paths,
+            git_workflow::git_workflow_diff_cached_stat,
+            git_workflow::git_workflow_commit,
+            git_workflow::git_workflow_push,
+            http_fetch::http_fetch_get,
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

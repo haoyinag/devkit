@@ -1,17 +1,26 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { timestampToDate, dateStringToTimestamps, formatDateTime } from "@/lib/time-utils";
+import {
+  timestampToDate,
+  dateStringToTimestamps,
+  formatDateTime,
+  nowLocalMinuteStr,
+} from "@/lib/time-utils";
+import { DateTimeMinuteInput } from "./DateTimeMinuteInput";
 
 function CopyableValue({ label, value }: { label: string; value: string }) {
   const [copied, setCopied] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  useEffect(() => () => clearTimeout(timerRef.current), []);
   const handleCopy = useCallback(() => {
     navigator.clipboard.writeText(value).then(() => {
       setCopied(true);
-      setTimeout(() => setCopied(false), 1200);
+      clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(() => setCopied(false), 1200);
     });
   }, [value]);
 
@@ -71,11 +80,7 @@ export function TimestampConverter() {
   }, []);
 
   const handleNowDate = useCallback(() => {
-    const now = new Date();
-    const pad = (n: number) => String(n).padStart(2, "0");
-    setDateInput(
-      `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`,
-    );
+    setDateInput(nowLocalMinuteStr());
   }, []);
 
   return (
@@ -124,11 +129,9 @@ export function TimestampConverter() {
           <div className="space-y-2">
             <Label>日期时间</Label>
             <div className="flex gap-2">
-              <Input
+              <DateTimeMinuteInput
                 value={dateInput}
-                onChange={(e) => setDateInput(e.target.value)}
-                placeholder="如 2024-04-01 12:00:00"
-                className="font-mono"
+                onChange={setDateInput}
                 onKeyDown={(e) => e.key === "Enter" && handleDateConvert()}
               />
               <Button onClick={handleNowDate} variant="outline" size="sm" className="shrink-0">

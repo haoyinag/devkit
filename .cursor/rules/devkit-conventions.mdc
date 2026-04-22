@@ -13,12 +13,13 @@ alwaysApply: true
 
 ## 项目结构
 
+- `bin/git-push.js` — `git-push` 全局 CLI 入口（`package.json` 的 `bin`，转发至 `scripts/git-push.mjs`）
 - `src/types.ts` — 全局类型（Page 等）
 - `src/lib/tools.ts` — 工具注册表（分类、搜索、元数据）
-- `src/components/<模块名>/` — 按功能模块组织组件（json、base64、url、jwt、uuid、hash、regex、time、home、color、diff、text、css-unit、cron、number-base、http-status、image、mock）
+- `src/components/<模块名>/` — 按功能模块组织组件（json、base64、url、jwt、uuid、hash、regex、time、home、color、diff、text、css-unit、cron、number-base、http-status、image、mock、cursor-rules、markdown-doc、markdown、git-push 含 GitWorkflowPanel）
 - `src/components/ui/` — shadcn/ui 基础组件（不手动修改）
 - `src/components/layout/` — 布局组件（Sidebar、ThemeToggle）
-- `src/lib/` — 纯逻辑工具函数，不包含 React 组件
+- `src/lib/` — 纯逻辑工具函数，不包含 React 组件（含 `git-workflow-types.ts` 等与 Tauri 对齐的类型）
 - `src/hooks/` — 自定义 React hooks
 
 ## 新增工具规范
