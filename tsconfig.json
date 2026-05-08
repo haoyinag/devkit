@@ -10,16 +10,18 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
-    "jsx": "react-jsx",
+    "jsx": "preserve",
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@app/*": ["./src-svelte/*"],
+      "@lib/*": ["./src/lib/*"]
     }
   },
-  "include": ["src"],
+  "include": ["src-svelte", "src/lib", "src-tauri/src"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }
