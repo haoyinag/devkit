@@ -85,18 +85,21 @@ export function Dashboard({ recent, onNavigate }: Props) {
   const hasText = clipText.trim().length > 0;
 
   return (
-    <div className="flex h-full flex-col gap-5 overflow-y-auto bg-background p-6 md:p-7">
-      <div className="bg-brand-gradient-soft rounded-2xl border border-border/70 p-5 shadow-elev-1">
-        <div className="flex items-start justify-between gap-3">
+    <div className="min-h-0 flex h-full flex-col gap-4 overflow-auto bg-background p-5 md:gap-5 md:p-7">
+      <div className="bg-brand-gradient-soft rounded-2xl border border-border/70 p-5 shadow-elev-1 md:p-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <h2 className="text-2xl font-semibold tracking-tight">
+            <h2 className="text-2xl font-semibold tracking-tight md:text-[28px]">
               <span className="text-brand-gradient">DevKit 工具箱</span>
             </h2>
             <p className="mt-1 text-sm text-muted-foreground">
               粘贴内容自动识别类型，或从下方选择工具
             </p>
           </div>
-          <Badge variant="secondary" className="bg-brand-gradient gap-1.5 rounded-full px-3 py-1 text-xs text-primary-foreground">
+          <Badge
+            variant="secondary"
+            className="bg-brand-gradient w-fit gap-1.5 rounded-full px-3 py-1 text-xs text-primary-foreground shadow-elev-1"
+          >
             <Sparkles size={12} />
             Phase 1 UI
           </Badge>
@@ -112,7 +115,7 @@ export function Dashboard({ recent, onNavigate }: Props) {
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-0">
-          <div className="overflow-hidden rounded-xl border border-border/70 bg-background transition-colors">
+          <div className="overflow-hidden rounded-xl border border-border/70 bg-background shadow-sm transition-colors">
         <textarea
           ref={textareaRef}
           value={clipText}
@@ -128,7 +131,7 @@ export function Dashboard({ recent, onNavigate }: Props) {
           }}
           placeholder="输入或粘贴内容，自动识别类型（JSON / JWT / Base64 / URL / 时间戳 / UUID）"
           rows={2}
-          className="block w-full resize-none bg-transparent px-4 py-3 font-mono text-sm placeholder:text-muted-foreground"
+          className="block w-full resize-none bg-transparent px-4 py-3 font-mono text-sm leading-relaxed placeholder:text-muted-foreground focus-visible:outline-none"
           style={{ minHeight: 60 }}
           spellCheck={false}
         />
@@ -181,22 +184,26 @@ export function Dashboard({ recent, onNavigate }: Props) {
 
           {/* Detection result row — separate line, never competes for space */}
           {detection && (
-            <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border/60 bg-background px-3 py-2">
-              <Badge variant="secondary" className="shrink-0 text-xs">
-                {detection.type.toUpperCase()}
-              </Badge>
-              <span className="min-w-0 flex-1 truncate text-sm">
-                识别为 <strong>{detection.label}</strong>
-                {detection.confidence === "medium" && "（可能）"}
-              </span>
-              <Button
-                size="sm"
-                className="shrink-0 gap-1"
-                onClick={() => onNavigate(detection.tool, clipText)}
-              >
-                <ExternalLink size={12} />
-                打开
-              </Button>
+            <div className="flex flex-col gap-2 rounded-lg border border-border/60 bg-background px-3 py-2 sm:flex-row sm:items-center">
+              <div className="flex min-w-0 items-center gap-2">
+                <Badge variant="secondary" className="shrink-0 text-xs">
+                  {detection.type.toUpperCase()}
+                </Badge>
+                <span className="min-w-0 truncate text-sm">
+                  识别为 <strong>{detection.label}</strong>
+                  {detection.confidence === "medium" && "（可能）"}
+                </span>
+              </div>
+              <div className="flex justify-end sm:ml-auto">
+                <Button
+                  size="sm"
+                  className="shrink-0 gap-1"
+                  onClick={() => onNavigate(detection.tool, clipText)}
+                >
+                  <ExternalLink size={12} />
+                  打开
+                </Button>
+              </div>
             </div>
           )}
         </div>
@@ -215,24 +222,24 @@ export function Dashboard({ recent, onNavigate }: Props) {
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-2">
-            {recentTools.map((t) => (
-              <Button
-                key={t.id}
-                variant="outline"
-                size="sm"
-                className="border-border/70 bg-background hover:bg-surface-2"
-                onClick={() => onNavigate(t.id)}
-              >
-                {t.label}
-              </Button>
-            ))}
-          </div>
+              {recentTools.map((t) => (
+                <Button
+                  key={t.id}
+                  variant="outline"
+                  size="sm"
+                  className="border-border/70 bg-background hover:bg-surface-2"
+                  onClick={() => onNavigate(t.id)}
+                >
+                  {t.label}
+                </Button>
+              ))}
+            </div>
           </CardContent>
         </Card>
       )}
 
       {/* All Tools */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {TOOL_CATEGORIES.map((cat) => (
           <Card key={cat.id} className="border-border/70 bg-surface-1 shadow-elev-1">
             <CardHeader className="pb-2">
@@ -249,10 +256,12 @@ export function Dashboard({ recent, onNavigate }: Props) {
                 <button
                   key={tool.id}
                   onClick={() => onNavigate(tool.id)}
-                  className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition-colors hover:bg-surface-2"
+                  className="group flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
                 >
-                  <span className="font-medium">{tool.label}</span>
-                  <span className="ml-2 shrink-0 text-xs text-muted-foreground/90">{tool.description}</span>
+                  <span className="min-w-0 truncate font-medium">{tool.label}</span>
+                  <span className="shrink-0 text-xs text-muted-foreground/90 transition-colors group-hover:text-muted-foreground">
+                    {tool.description}
+                  </span>
                 </button>
               ))}
             </CardContent>

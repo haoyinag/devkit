@@ -272,7 +272,7 @@ export function OpenApiMockTab() {
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
         在桌面版（Tauri）下可通过本机请求拉取内网 Swagger，避免浏览器 CORS。解析后使用{" "}
-        <code className="rounded bg-muted px-1">json-schema-faker</code> 按 Schema 生成数据，并尽量使用文档中的{" "}
+        <code className="rounded bg-muted px-1">内置 Schema Mock 生成器</code> 按 Schema 生成数据，并尽量使用文档中的{" "}
         <code className="rounded bg-muted px-1">example</code>。
       </p>
 

@@ -2,7 +2,7 @@ import { useCallback, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { buildMswSnippet, type HttpMethod } from "@/lib/openapi-mock";
-import { generateMock } from "@/lib/json-mock-infer";
+import { generateMock, listSchemaArrayPaths } from "@/lib/json-mock-infer";
 import {
   buildMockSchemaFromParsed,
   parseSwaggerMarkdownDoc,
@@ -46,6 +46,8 @@ export function SwaggerMarkdownMockTab() {
   const [target, setTarget] = useState<"response" | "request">("response");
   const [useTable, setUseTable] = useState(true);
   const [count, setCount] = useState(1);
+  const [arrayItemCount, setArrayItemCount] = useState(2);
+  const [arrayDepthLimit, setArrayDepthLimit] = useState(6);
   const [mswBase, setMswBase] = useState("**");
   const [outJson, setOutJson] = useState("");
   const [outMsw, setOutMsw] = useState("");
@@ -55,6 +57,16 @@ export function SwaggerMarkdownMockTab() {
     if (!doc.trim()) return null;
     return parseSwaggerMarkdownDoc(doc);
   }, [doc]);
+
+  const schemaPreview = useMemo(() => {
+    if (!parsed) return null;
+    return buildMockSchemaFromParsed(parsed, target, useTable);
+  }, [parsed, target, useTable]);
+
+  const arrayPaths = useMemo(() => {
+    if (!schemaPreview) return [];
+    return listSchemaArrayPaths(schemaPreview, arrayDepthLimit);
+  }, [schemaPreview, arrayDepthLimit]);
 
   const handleGenerate = useCallback(() => {
     setErr(null);
@@ -67,10 +79,14 @@ export function SwaggerMarkdownMockTab() {
     const p = parseSwaggerMarkdownDoc(doc);
     const schema = buildMockSchemaFromParsed(p, target, useTable);
     const n = Math.max(1, Math.min(50, count));
+    const arrayOptions = {
+      arrayLength: Math.max(1, Math.min(100, arrayItemCount)),
+      arrayDepthLimit: Math.max(0, Math.min(12, arrayDepthLimit)),
+    };
     try {
       const parts: unknown[] = [];
       for (let i = 0; i < n; i++) {
-        parts.push(generateMock(schema));
+        parts.push(generateMock(schema, arrayOptions));
       }
       const payload = n === 1 ? parts[0] : parts;
       setOutJson(JSON.stringify(payload, null, 2));
@@ -82,7 +98,7 @@ export function SwaggerMarkdownMockTab() {
     } catch (e) {
       setErr(e instanceof Error ? e.message : String(e));
     }
-  }, [doc, target, useTable, count, mswBase]);
+  }, [doc, target, useTable, count, arrayItemCount, arrayDepthLimit, mswBase]);
 
   return (
     <div className="space-y-4">
@@ -97,7 +113,7 @@ export function SwaggerMarkdownMockTab() {
         </p>
         <p>
           <span className="font-medium text-foreground">使用示例</span>：粘贴整段接口文档 → 选择「响应」或「请求」→ 勾选是否合并响应参数表 →
-          设置生成条数 → 点「生成 Mock」。JSON 可拷到 MSW / 本地 mock；MSW 片段中的路径来自解析出的接口地址，可按需改前缀。
+          设置顶层条数和数组条数 → 点「生成 Mock」。JSON 可拷到 MSW / 本地 mock；MSW 片段中的路径来自解析出的接口地址，可按需改前缀。
         </p>
         <p>
           <span className="font-medium text-foreground">局限</span>：无法替代完整 OpenAPI；嵌套层级过深的表格可能解析不全；未出现「响应示例」时，会尝试使用文档中其它 JSON
@@ -154,6 +170,26 @@ export function SwaggerMarkdownMockTab() {
         </div>
       )}
 
+      {schemaPreview && (
+        <div className="rounded-lg border border-border p-3 text-xs text-muted-foreground">
+          <span className="font-medium text-foreground">数组生成策略</span>
+          <span className="ml-2">
+            深度 {arrayDepthLimit} 层内的数组固定生成 {arrayItemCount} 条
+          </span>
+          {arrayPaths.length > 0 ? (
+            <div className="mt-1 flex flex-wrap gap-1.5">
+              {arrayPaths.map((path) => (
+                <Badge key={path} variant="outline" className="font-mono font-normal">
+                  {path}
+                </Badge>
+              ))}
+            </div>
+          ) : (
+            <div className="mt-1">当前选择的示例中未检测到数组，或数组位于检测层级之外。</div>
+          )}
+        </div>
+      )}
+
       <div className="flex flex-wrap items-center gap-3">
         <label className="flex items-center gap-1.5 text-sm">
           <span className="text-muted-foreground">示例来源</span>
@@ -176,13 +212,35 @@ export function SwaggerMarkdownMockTab() {
           合并「响应参数」表格类型（仅响应）
         </label>
         <label className="flex items-center gap-1.5 text-sm text-muted-foreground">
-          条数
+          顶层条数
           <input
             type="number"
             min={1}
             max={50}
             value={count}
             onChange={(e) => setCount(Math.max(1, Math.min(50, Number(e.target.value) || 1)))}
+            className="h-7 w-14 rounded-md border border-input bg-transparent px-2 text-center text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+          />
+        </label>
+        <label className="flex items-center gap-1.5 text-sm text-muted-foreground">
+          数组条数
+          <input
+            type="number"
+            min={1}
+            max={100}
+            value={arrayItemCount}
+            onChange={(e) => setArrayItemCount(Math.max(1, Math.min(100, Number(e.target.value) || 1)))}
+            className="h-7 w-16 rounded-md border border-input bg-transparent px-2 text-center text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+          />
+        </label>
+        <label className="flex items-center gap-1.5 text-sm text-muted-foreground">
+          数组检测层级
+          <input
+            type="number"
+            min={0}
+            max={12}
+            value={arrayDepthLimit}
+            onChange={(e) => setArrayDepthLimit(Math.max(0, Math.min(12, Number(e.target.value) || 0)))}
             className="h-7 w-14 rounded-md border border-input bg-transparent px-2 text-center text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
           />
         </label>

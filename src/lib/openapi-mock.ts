@@ -1,8 +1,9 @@
 import { dereference as dereferenceRefs } from "@apidevtools/json-schema-ref-parser";
-import { createGenerator, type JsonSchema } from "json-schema-faker";
 import { parse as parseYaml } from "yaml";
+import { generateMock } from "@/lib/json-mock-infer";
 
 export type HttpMethod = "get" | "post" | "put" | "patch" | "delete" | "options" | "head";
+export type JsonSchema = Record<string, unknown>;
 
 const HTTP_METHODS: HttpMethod[] = ["get", "post", "put", "patch", "delete", "options", "head"];
 
@@ -212,19 +213,160 @@ export async function dereferenceSpec(spec: unknown): Promise<unknown> {
   }
 }
 
-const defaultGen = createGenerator({
-  alwaysFakeOptionals: true,
-  useExamplesValue: true,
-  useDefaultValue: true,
-  fillProperties: true,
-  maxDepth: 14,
-  refDepthMax: 12,
-  minItems: 0,
-  maxItems: 6,
-});
+function mergeRequired(base: unknown, incoming: unknown): string[] | undefined {
+  const items = new Set<string>();
+  if (Array.isArray(base)) {
+    for (const item of base) {
+      if (typeof item === "string" && item) items.add(item);
+    }
+  }
+  if (Array.isArray(incoming)) {
+    for (const item of incoming) {
+      if (typeof item === "string" && item) items.add(item);
+    }
+  }
+  return items.size > 0 ? [...items] : undefined;
+}
+
+function mergeObjectSchemas(parts: JsonSchema[]): JsonSchema {
+  const out: JsonSchema = { type: "object", properties: {} };
+  const outProps = out.properties as Record<string, unknown>;
+  let required: string[] | undefined;
+
+  for (const part of parts) {
+    if (part.type === "object" && part.properties && typeof part.properties === "object") {
+      Object.assign(outProps, part.properties as Record<string, unknown>);
+    }
+    required = mergeRequired(required, part.required);
+  }
+
+  if (required && required.length > 0) out.required = required;
+  return out;
+}
+
+function normalizeOpenApiSchema(schema: JsonSchema): JsonSchema {
+  const cloned = cloneJson(schema);
+
+  if (cloned.example !== undefined) return inferSchemaFromExample(cloned.example, cloned);
+  if (cloned.default !== undefined) return inferSchemaFromExample(cloned.default, cloned);
+
+  const allOf = Array.isArray(cloned.allOf) ? cloned.allOf : null;
+  if (allOf && allOf.length > 0) {
+    const normalizedParts = allOf
+      .filter((item): item is JsonSchema => !!item && typeof item === "object")
+      .map((item) => normalizeOpenApiSchema(item));
+    const allObjectLike = normalizedParts.every((item) => item.type === "object" || item.properties);
+    if (allObjectLike) {
+      const merged = mergeObjectSchemas(normalizedParts);
+      return applySchemaDecorators(merged, cloned);
+    }
+    return applySchemaDecorators(normalizedParts[0] ?? { type: "object", properties: {} }, cloned);
+  }
+
+  const variants = [cloned.oneOf, cloned.anyOf].find(Array.isArray) as unknown[] | undefined;
+  if (variants && variants.length > 0) {
+    const first = variants.find((item) => !!item && typeof item === "object") as JsonSchema | undefined;
+    return applySchemaDecorators(normalizeOpenApiSchema(first ?? { type: "object", properties: {} }), cloned);
+  }
+
+  if (cloned.nullable === true) {
+    if (!cloned.type && cloned.properties) cloned.type = "object";
+    if (!cloned.type && cloned.items) cloned.type = "array";
+  }
+
+  if (cloned.type === "array") {
+    return applySchemaDecorators(
+      {
+        ...cloned,
+        items:
+          cloned.items && typeof cloned.items === "object"
+            ? normalizeOpenApiSchema(cloned.items as JsonSchema)
+            : { type: "object", properties: {} },
+      },
+      cloned,
+    );
+  }
+
+  if (cloned.type === "object" || cloned.properties) {
+    const properties = cloned.properties && typeof cloned.properties === "object" ? cloned.properties : {};
+    const normalizedProps: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(properties as Record<string, unknown>)) {
+      normalizedProps[key] =
+        value && typeof value === "object"
+          ? normalizeOpenApiSchema(value as JsonSchema)
+          : { type: "string" };
+    }
+    return applySchemaDecorators(
+      {
+        ...cloned,
+        type: "object",
+        properties: normalizedProps,
+      },
+      cloned,
+    );
+  }
+
+  return applySchemaDecorators(cloned, cloned);
+}
+
+function applySchemaDecorators(base: JsonSchema, source: JsonSchema): JsonSchema {
+  const out = cloneJson(base);
+  const keepKeys = [
+    "enum",
+    "const",
+    "format",
+    "minimum",
+    "maximum",
+    "exclusiveMinimum",
+    "exclusiveMaximum",
+    "multipleOf",
+    "minItems",
+    "maxItems",
+    "minLength",
+    "maxLength",
+    "pattern",
+    "description",
+  ];
+  for (const key of keepKeys) {
+    if (source[key] !== undefined) out[key] = source[key];
+  }
+  return out;
+}
+
+function inferSchemaFromExample(example: unknown, fallback: JsonSchema): JsonSchema {
+  const inferred = cloneJson(generateSchemaLike(example));
+  return applySchemaDecorators(inferred, fallback);
+}
+
+function generateSchemaLike(value: unknown): JsonSchema {
+  if (value === null) return { type: "null" };
+  if (Array.isArray(value)) {
+    return {
+      type: "array",
+      items: value.length > 0 ? generateSchemaLike(value[0]) : { type: "object", properties: {} },
+      minItems: value.length,
+      maxItems: value.length,
+    };
+  }
+  if (typeof value === "object") {
+    const properties: Record<string, unknown> = {};
+    const required: string[] = [];
+    for (const [key, child] of Object.entries(value as Record<string, unknown>)) {
+      properties[key] = generateSchemaLike(child);
+      required.push(key);
+    }
+    return { type: "object", properties, required };
+  }
+  if (typeof value === "number") return Number.isInteger(value) ? { type: "integer" } : { type: "number" };
+  if (typeof value === "boolean") return { type: "boolean" };
+  return { type: "string" };
+}
 
 export async function generateMockFromJsonSchema(schema: JsonSchema): Promise<unknown> {
-  return defaultGen.generate(schema);
+  return generateMock(normalizeOpenApiSchema(schema), {
+    arrayLength: 2,
+    arrayDepthLimit: 8,
+  });
 }
 
 export async function generateResponseMock(opts: {
@@ -241,7 +383,7 @@ export async function generateResponseMock(opts: {
     return null;
   }
   try {
-    return await defaultGen.generate(schema);
+    return await generateMockFromJsonSchema(schema);
   } catch (e) {
     if (example !== undefined) return cloneJson(example);
     throw e;
