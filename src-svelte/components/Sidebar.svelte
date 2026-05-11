@@ -31,6 +31,7 @@
     Sun,
     Timer,
     Type,
+    FileCode2,
     Upload,
     X,
   } from "@lucide/svelte";
@@ -81,6 +82,7 @@
     "http-status": Globe,
     image: Image,
     mock: Database,
+    "ts-type-generator": FileCode2,
     "cursor-rules": ScrollText,
     "markdown-doc": NotebookPen,
     "git-push": Upload,

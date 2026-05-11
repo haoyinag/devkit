@@ -17,6 +17,7 @@ export type Page =
   | "http-status"
   | "image"
   | "mock"
+  | "ts-type-generator"
   | "cursor-rules"
   | "markdown-doc"
   | "git-push"

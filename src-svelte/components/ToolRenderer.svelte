@@ -20,6 +20,7 @@
   import RegexTool from "@app/components/tools/RegexTool.svelte";
   import TextTool from "@app/components/tools/TextTool.svelte";
   import TimeTool from "@app/components/tools/TimeTool.svelte";
+  import TsTypeGeneratorTool from "@app/components/tools/TsTypeGeneratorTool.svelte";
   import UrlTool from "@app/components/tools/UrlTool.svelte";
   import UuidTool from "@app/components/tools/UuidTool.svelte";
 
@@ -31,11 +32,6 @@
 </script>
 
 <div class="flex h-full flex-col gap-3 overflow-auto p-5">
-  <div class="card p-4">
-    <div class="text-xl font-semibold">{page}</div>
-    <div class="text-xs text-gray-500">Svelte 精简实现</div>
-  </div>
-
   {#if page === "json"}
     <JsonTool initialContent={initialContent} />
   {:else if page === "base64"}
@@ -70,6 +66,8 @@
     <ImageTool />
   {:else if page === "mock"}
     <MockTool />
+  {:else if page === "ts-type-generator"}
+    <TsTypeGeneratorTool initialContent={initialContent} />
   {:else if page === "cursor-rules"}
     <CursorRulesTool />
   {:else if page === "markdown-doc"}

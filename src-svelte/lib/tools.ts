@@ -83,6 +83,12 @@ export const TOOL_CATEGORIES: ToolCategory[] = [
       { id: "uuid", label: "UUID 生成", description: "批量生成 UUID v4", keywords: ["uuid", "生成", "generate", "唯一", "id"] },
       { id: "hash", label: "Hash 计算", description: "MD5 / SHA 哈希计算", keywords: ["hash", "md5", "sha", "哈希", "摘要", "digest"] },
       { id: "mock", label: "Mock 生成", description: "JSON → Schema → Mock 数据", keywords: ["mock", "模拟", "数据", "schema", "faker", "生成"] },
+      {
+        id: "ts-type-generator",
+        label: "TS 类型生成",
+        description: "粘贴文档片段生成 TypeScript 类型定义",
+        keywords: ["typescript", "type", "interface", "schema", "swagger", "openapi", "类型", "生成"],
+      },
     ],
   },
   {

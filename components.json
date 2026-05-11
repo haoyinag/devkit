@@ -2,10 +2,10 @@
   "$schema": "https://ui.shadcn.com/schema.json",
   "style": "base-nova",
   "rsc": false,
-  "tsx": true,
+  "tsx": false,
   "tailwind": {
     "config": "",
-    "css": "src/index.css",
+    "css": "src-svelte/app.css",
     "baseColor": "neutral",
     "cssVariables": true,
     "prefix": ""
@@ -15,9 +15,7 @@
   "aliases": {
     "components": "@/components",
     "utils": "@/lib/utils",
-    "ui": "@/components/ui",
-    "lib": "@/lib",
-    "hooks": "@/hooks"
+    "lib": "@/lib"
   },
   "menuColor": "default",
   "menuAccent": "subtle",

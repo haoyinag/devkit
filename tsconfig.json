@@ -17,11 +17,11 @@
     "noFallthroughCasesInSwitch": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"],
+      "@/*": ["./src-svelte/*"],
       "@app/*": ["./src-svelte/*"],
-      "@lib/*": ["./src/lib/*"]
+      "@lib/*": ["./src-svelte/lib/*"]
     }
   },
-  "include": ["src-svelte", "src/lib", "src-tauri/src"],
+  "include": ["src-svelte", "src-tauri/src"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

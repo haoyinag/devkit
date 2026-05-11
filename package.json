@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "test:ts-type-generator": "node --import tsx --test tests/ts-type-generator.test.ts",
     "open": "start src-tauri\\target\\release\\devkit.exe",
     "preview": "vite preview",
     "tauri": "tauri",
@@ -42,6 +43,7 @@
     "@tauri-apps/cli": "^2",
     "@types/node": "^25.5.0",
     "svelte-check": "^4.3.1",
+    "tsx": "^4.21.0",
     "typescript": "~5.8.3",
     "vite": "^7.0.4"
   }

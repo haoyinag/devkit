@@ -71,7 +71,7 @@
         <h2 class="text-2xl font-semibold tracking-tight md:text-[28px]">
           <span class="text-brand-gradient">DevKit 工具箱</span>
         </h2>
-        <p class="mt-1 text-sm text-muted-foreground">粘贴内容自动识别类型，或从下方选择工具</p>
+        <p class="mt-1 text-sm text-muted-foreground">粘贴内容自动识别类型，支持 JSON/JWT/URL/Base64/时间戳/OpenAPI/表格片段</p>
       </div>
       <div class="bg-brand-gradient inline-flex w-fit items-center gap-1.5 rounded-full px-3 py-1 text-xs text-[var(--primary-foreground)]">
         <Sparkles size={12} />
@@ -89,7 +89,7 @@
       <textarea
         bind:this={textareaRef}
         bind:value={text}
-        placeholder="输入或粘贴内容，自动识别类型（JSON / JWT / Base64 / URL / 时间戳 / UUID）"
+        placeholder="输入或粘贴内容，自动识别类型（JSON / JWT / Base64 / URL / 时间戳 / UUID / OpenAPI / 表格）"
         rows="2"
         class="block w-full resize-none bg-transparent px-4 py-3 font-mono text-sm leading-relaxed placeholder:text-muted-foreground"
         spellcheck="false"

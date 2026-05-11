@@ -9,6 +9,7 @@ export type DetectedType =
   | "base64"
   | "color"
   | "cron"
+  | "ts-type-snippet"
   | "unknown";
 
 export interface Detection {
@@ -27,7 +28,16 @@ const TOOL_MAP: Record<Exclude<DetectedType, "unknown">, { tool: Page; label: st
   base64: { tool: "base64", label: "Base64 解码" },
   color: { tool: "color", label: "颜色工具" },
   cron: { tool: "cron", label: "Cron 解析" },
+  "ts-type-snippet": { tool: "ts-type-generator", label: "TS 类型生成" },
 };
+
+function isOpenApiLikeObject(value: unknown): boolean {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const obj = value as Record<string, unknown>;
+  const hasVersion = typeof obj.openapi === "string" || obj.swagger === "2.0";
+  const hasPathsOrComponents = typeof obj.paths === "object" || typeof obj.components === "object";
+  return hasVersion && hasPathsOrComponents;
+}
 
 function looksLikeJson(t: string): boolean {
   return (
@@ -37,13 +47,36 @@ function looksLikeJson(t: string): boolean {
   );
 }
 
+function looksLikeTypeSnippet(t: string): boolean {
+  const lines = t.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  if (lines.length < 2) return false;
+
+  const hasTableHeaders =
+    (lines.includes("参数名称") && lines.includes("数据类型")) ||
+    (lines.includes("字段名") && lines.includes("字段类型"));
+  if (hasTableHeaders) return true;
+
+  const hasTypeKeywords = /(integer\(int\d+\)|string\(date(?:-time)?\)|number|boolean|integer\(int64\)|integer\(int32\))/i.test(t);
+  const hasFieldRows = lines.some((line) => /^[A-Za-z_$][\w$]*\s+.+\s+(string|number|boolean|integer)/i.test(line));
+  if (hasTypeKeywords && hasFieldRows) return true;
+
+  const hasObjectLikeSnippet = t.includes("{") && t.includes("}") && /[A-Za-z_$][\w$]*\s*:\s*.+/.test(t);
+  if (hasObjectLikeSnippet && /valueOrEmpty\(|context\?\./.test(t)) return true;
+
+  const hasOpenApiMarkers = /(^|\s)(openapi|swagger)\s*[:"]/i.test(t) && /(paths|components)\s*[:"]/i.test(t);
+  return hasOpenApiMarkers;
+}
+
 export function detectContent(text: string): Detection | null {
   const t = text.trim();
   if (!t || t.length > 1_000_000) return null;
 
   if (looksLikeJson(t)) {
     try {
-      JSON.parse(t);
+      const parsed = JSON.parse(t);
+      if (isOpenApiLikeObject(parsed)) {
+        return { type: "ts-type-snippet", confidence: "high", ...TOOL_MAP["ts-type-snippet"] };
+      }
       return { type: "json", confidence: "high", ...TOOL_MAP.json };
     } catch {
       if (t.includes(":") || t.includes(",")) {
@@ -101,6 +134,10 @@ export function detectContent(text: string): Detection | null {
     } catch {
       /* not base64 */
     }
+  }
+
+  if (looksLikeTypeSnippet(t)) {
+    return { type: "ts-type-snippet", confidence: "medium", ...TOOL_MAP["ts-type-snippet"] };
   }
 
   return null;
