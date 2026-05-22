@@ -1,5 +1,6 @@
 mod git_workflow;
 mod http_fetch;
+mod local_dev_config;
 
 use serde::Serialize;
 use std::fs;
@@ -118,6 +119,7 @@ pub fn run() {
             git_workflow::git_workflow_commit,
             git_workflow::git_workflow_push,
             http_fetch::http_fetch_get,
+            local_dev_config::scan_local_dev_configs,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

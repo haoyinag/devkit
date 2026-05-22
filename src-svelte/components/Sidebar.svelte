@@ -29,6 +29,7 @@
     ScrollText,
     Search,
     Sun,
+    Terminal,
     Timer,
     Type,
     FileCode2,
@@ -88,6 +89,7 @@
     "git-push": Upload,
     "git-branch": GitBranch,
     "git-cheatsheet": BookOpen,
+    "local-configs": Terminal,
   };
 
   const isSearching = $derived(query.trim().length > 0);

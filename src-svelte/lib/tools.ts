@@ -43,6 +43,12 @@ export const TOOL_CATEGORIES: ToolCategory[] = [
         description: "常用 Git 命令与组合说明（含示例）",
         keywords: ["git", "速查", "命令", "cheatsheet", "commit", "push", "pull", "rebase", "merge", "stash", "工作流"],
       },
+      {
+        id: "local-configs",
+        label: "本地配置",
+        description: "扫描 PowerShell/CMD/Git Bash 快捷命令、Git alias 和 VS Code snippets",
+        keywords: ["alias", "profile", "snippet", "cmd", "powershell", "git", "bash", "vscode", "本地配置", "快捷命令"],
+      },
     ],
   },
   {

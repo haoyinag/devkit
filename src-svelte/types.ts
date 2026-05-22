@@ -22,4 +22,5 @@ export type Page =
   | "markdown-doc"
   | "git-push"
   | "git-branch"
-  | "git-cheatsheet";
+  | "git-cheatsheet"
+  | "local-configs";

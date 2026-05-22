@@ -14,6 +14,7 @@
   import ImageTool from "@app/components/tools/ImageTool.svelte";
   import JsonTool from "@app/components/tools/JsonTool.svelte";
   import JwtTool from "@app/components/tools/JwtTool.svelte";
+  import LocalConfigTool from "@app/components/tools/LocalConfigTool.svelte";
   import MarkdownDocTool from "@app/components/tools/MarkdownDocTool.svelte";
   import MockTool from "@app/components/tools/MockTool.svelte";
   import NumberBaseTool from "@app/components/tools/NumberBaseTool.svelte";
@@ -78,6 +79,8 @@
     <GitBranchTool />
   {:else if page === "git-cheatsheet"}
     <GitCheatsheetTool />
+  {:else if page === "local-configs"}
+    <LocalConfigTool />
   {:else}
     <article class="card p-4">该工具正在迁移中。</article>
   {/if}
