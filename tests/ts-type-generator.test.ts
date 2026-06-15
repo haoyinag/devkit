@@ -113,3 +113,46 @@ test("routes OpenAPI JSON to ts type generator in detection", () => {
   assert.equal(detection?.tool, "ts-type-generator");
   assert.equal(detection?.confidence, "high");
 });
+
+test("supports OpenAPI 3.1 type array nullable syntax", () => {
+  const input = JSON.stringify({
+    openapi: "3.1.0",
+    paths: {
+      "/users": {
+        get: {
+          responses: {
+            "200": {
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      nickname: { type: ["string", "null"] },
+                      age: { type: ["integer", "null"] },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+
+  const result = generateTypeDefinitions(input, "UserResp");
+  assert.match(result.code, /nickname\?: string \| null;/);
+  assert.match(result.code, /age\?: number \| null;/);
+});
+
+test("parses union types from swagger-like table rows", () => {
+  const table = [
+    "字段名\t字段说明\t字段类型",
+    "status\t状态\tstring | null",
+    "count\t数量\tnumber | string",
+  ].join("\n");
+  const result = generateTypeDefinitions(table, "Row");
+  assert.equal(result.mode, "table");
+  assert.match(result.code, /status\?: string \| null;/);
+  assert.match(result.code, /count\?: number \| string;/);
+});

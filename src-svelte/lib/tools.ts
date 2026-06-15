@@ -15,6 +15,18 @@ export interface ToolCategory {
 
 export const TOOL_CATEGORIES: ToolCategory[] = [
   {
+    id: "api",
+    label: "接口",
+    tools: [
+      {
+        id: "api-debug",
+        label: "接口调试",
+        description: "粘贴请求配置，自动生成表单并发起真实请求",
+        keywords: ["api", "http", "axios", "request", "response", "接口", "请求", "调试", "联调", "拦截器"],
+      },
+    ],
+  },
+  {
     id: "cursor",
     label: "Cursor",
     tools: [
@@ -92,8 +104,8 @@ export const TOOL_CATEGORIES: ToolCategory[] = [
       {
         id: "ts-type-generator",
         label: "TS 类型生成",
-        description: "粘贴文档片段生成 TypeScript 类型定义",
-        keywords: ["typescript", "type", "interface", "schema", "swagger", "openapi", "类型", "生成"],
+        description: "从 JSON / OpenAPI / Swagger 表格 / 对象片段生成 TypeScript 类型",
+        keywords: ["typescript", "type", "interface", "schema", "swagger", "openapi", "json", "表格", "类型", "生成", "api"],
       },
     ],
   },
@@ -103,6 +115,12 @@ export const TOOL_CATEGORIES: ToolCategory[] = [
     tools: [
       { id: "regex", label: "正则测试", description: "正则表达式匹配高亮", keywords: ["regex", "正则", "regular expression", "匹配", "pattern"] },
       { id: "text", label: "文本处理", description: "大小写 / 去重 / 转义 / 统计", keywords: ["文本", "text", "大小写", "去重", "排序", "转义", "unicode", "html"] },
+      {
+        id: "calculator",
+        label: "计算器/计数器/计时",
+        description: "四则计算 / 简易计数 / 正计时与倒计时",
+        keywords: ["计算器", "计数器", "计时器", "倒计时", "calculator", "counter", "stopwatch", "countdown", "timer", "四则", "加减乘除", "计数"],
+      },
     ],
   },
   {

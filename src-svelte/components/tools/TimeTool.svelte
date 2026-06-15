@@ -35,6 +35,7 @@
 
   let activeTab = $state<TimeTab>("range");
   let copied = $state("");
+  const MAX_HISTORY = 20;
 
   // range
   let startStr = $state("");
@@ -48,6 +49,7 @@
     endMs: number;
     endIso: string;
   } | null>(null);
+  let rangeHistory = $state<string[]>([]);
 
   // clock
   let now = $state(new Date());
@@ -63,12 +65,21 @@
   let tsType = $state("");
   let dateResult = $state<{ seconds: number; milliseconds: number } | null>(null);
   let convertError = $state("");
+  let tsToDateHistory = $state<string[]>([]);
+  let dateToTsHistory = $state<string[]>([]);
 
   // diff
   let diffDate1 = $state("");
   let diffDate2 = $state("");
   let diffError = $state("");
   let diffResult = $state<TimeDiff | null>(null);
+  let diffHistory = $state<string[]>([]);
+
+  let rangeStartInput = $state<HTMLInputElement | null>(null);
+  let rangeEndInput = $state<HTMLInputElement | null>(null);
+  let convertDateInput = $state<HTMLInputElement | null>(null);
+  let diffDate1Input = $state<HTMLInputElement | null>(null);
+  let diffDate2Input = $state<HTMLInputElement | null>(null);
 
   const toastCopied = (key: string) => {
     copied = key;
@@ -79,6 +90,17 @@
   const copyText = async (key: string, text: string) => {
     await navigator.clipboard.writeText(text);
     toastCopied(key);
+  };
+  const pushHistory = (list: string[], entry: string) => [entry, ...list].slice(0, MAX_HISTORY);
+  const historyTime = () => formatDateTime(new Date(), "Asia/Shanghai");
+  const openNativePicker = (input: HTMLInputElement | null) => {
+    if (!input) return;
+    // `showPicker` 会触发系统原生日期/时间选择器弹窗。
+    if (typeof input.showPicker === "function") input.showPicker();
+    else {
+      input.focus();
+      input.click();
+    }
   };
 
   const toLocalDatetimeValue = (canonical: string) => dateStrToDatetimeLocalValue(canonical);
@@ -108,6 +130,10 @@
         endMs: e.milliseconds,
         endIso: new Date(endStr).toISOString(),
       };
+      rangeHistory = pushHistory(
+        rangeHistory,
+        `[${historyTime()}] ${startStr} ~ ${endStr} => 秒(${s.seconds} ~ ${e.seconds}) / 毫秒(${s.milliseconds} ~ ${e.milliseconds})`,
+      );
       rangeError = "";
     } catch (error) {
       rangeError = error instanceof Error ? error.message : "时间格式无效";
@@ -120,6 +146,7 @@
       const { date, type } = timestampToDate(tsInput);
       tsResult = formatDateTime(date, "Asia/Shanghai");
       tsType = type === "seconds" ? "秒级 (10位)" : "毫秒级 (13位)";
+      tsToDateHistory = pushHistory(tsToDateHistory, `[${historyTime()}] ${tsInput.trim()} => ${tsResult}（${tsType}）`);
       convertError = "";
     } catch (error) {
       convertError = error instanceof Error ? error.message : "转换失败";
@@ -131,6 +158,10 @@
   const handleConvertDate = () => {
     try {
       dateResult = dateStringToTimestamps(dateInput);
+      dateToTsHistory = pushHistory(
+        dateToTsHistory,
+        `[${historyTime()}] ${dateInput.trim()} => 秒 ${dateResult.seconds} / 毫秒 ${dateResult.milliseconds}`,
+      );
       convertError = "";
     } catch (error) {
       convertError = error instanceof Error ? error.message : "转换失败";
@@ -141,6 +172,10 @@
   const handleCalcDiff = () => {
     try {
       diffResult = calculateTimeDiff(diffDate1, diffDate2);
+      diffHistory = pushHistory(
+        diffHistory,
+        `[${historyTime()}] ${diffDate1} ~ ${diffDate2} => ${diffResult.days}天 ${diffResult.hours}小时 ${diffResult.minutes}分 ${diffResult.seconds}秒`,
+      );
       diffError = "";
     } catch (error) {
       diffError = error instanceof Error ? error.message : "计算失败";
@@ -203,9 +238,11 @@
                 class="input font-mono"
                 type="datetime-local"
                 step="60"
+                bind:this={rangeStartInput}
                 value={toLocalDatetimeValue(startStr)}
                 onchange={(e) => (startStr = fromLocalDatetimeValue((e.target as HTMLInputElement).value))}
               />
+              <button class="btn" onclick={() => openNativePicker(rangeStartInput)}>选择</button>
               <button class="btn" onclick={() => (startStr = nowLocalMinuteStr())}>当前</button>
             </div>
           </div>
@@ -216,9 +253,11 @@
                 class="input font-mono"
                 type="datetime-local"
                 step="60"
+                bind:this={rangeEndInput}
                 value={toLocalDatetimeValue(endStr)}
                 onchange={(e) => (endStr = fromLocalDatetimeValue((e.target as HTMLInputElement).value))}
               />
+              <button class="btn" onclick={() => openNativePicker(rangeEndInput)}>选择</button>
               <button class="btn" onclick={() => (endStr = nowLocalMinuteStr())}>当前</button>
             </div>
           </div>
@@ -272,6 +311,18 @@
           </div>
         </div>
       {/if}
+      <div class="card p-4">
+        <div class="mb-2 text-sm font-semibold">转换历史（最多 20 条）</div>
+        {#if rangeHistory.length === 0}
+          <div class="text-sm text-muted-foreground">暂无历史记录</div>
+        {:else}
+          <div class="space-y-2">
+            {#each rangeHistory as item}
+              <div class="rounded-md bg-muted px-3 py-2 font-mono text-xs">{item}</div>
+            {/each}
+          </div>
+        {/if}
+      </div>
     </section>
   {/if}
 
@@ -333,6 +384,18 @@
           {/if}
         </div>
       </div>
+      <div class="card p-4">
+        <div class="mb-2 text-sm font-semibold">时间戳 → 日期时间历史（最多 20 条）</div>
+        {#if tsToDateHistory.length === 0}
+          <div class="text-sm text-muted-foreground">暂无历史记录</div>
+        {:else}
+          <div class="space-y-2">
+            {#each tsToDateHistory as item}
+              <div class="rounded-md bg-muted px-3 py-2 font-mono text-xs">{item}</div>
+            {/each}
+          </div>
+        {/if}
+      </div>
 
       <div class="card p-4">
         <div class="mb-2 text-sm font-semibold">日期时间 → 时间戳</div>
@@ -342,9 +405,11 @@
               class="input font-mono"
               type="datetime-local"
               step="60"
+              bind:this={convertDateInput}
               value={toLocalDatetimeValue(dateInput)}
               onchange={(e) => (dateInput = fromLocalDatetimeValue((e.target as HTMLInputElement).value))}
             />
+            <button class="btn" onclick={() => openNativePicker(convertDateInput)}>选择</button>
             <button class="btn" onclick={() => (dateInput = nowLocalMinuteStr())}>当前</button>
           </div>
           <button class="btn btn-primary" onclick={handleConvertDate}>转换</button>
@@ -372,6 +437,18 @@
           {/if}
         </div>
       </div>
+      <div class="card p-4">
+        <div class="mb-2 text-sm font-semibold">日期时间 → 时间戳历史（最多 20 条）</div>
+        {#if dateToTsHistory.length === 0}
+          <div class="text-sm text-muted-foreground">暂无历史记录</div>
+        {:else}
+          <div class="space-y-2">
+            {#each dateToTsHistory as item}
+              <div class="rounded-md bg-muted px-3 py-2 font-mono text-xs">{item}</div>
+            {/each}
+          </div>
+        {/if}
+      </div>
 
       {#if convertError}
         <div class="md:col-span-2 rounded-md border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-700 dark:text-red-300">{convertError}</div>
@@ -390,9 +467,11 @@
               class="input font-mono"
               type="datetime-local"
               step="60"
+              bind:this={diffDate1Input}
               value={toLocalDatetimeValue(diffDate1)}
               onchange={(e) => (diffDate1 = fromLocalDatetimeValue((e.target as HTMLInputElement).value))}
             />
+            <button class="btn" onclick={() => openNativePicker(diffDate1Input)}>选择</button>
             <button class="btn" onclick={() => (diffDate1 = nowLocalMinuteStr())}>当前</button>
           </div>
         </div>
@@ -403,9 +482,11 @@
               class="input font-mono"
               type="datetime-local"
               step="60"
+              bind:this={diffDate2Input}
               value={toLocalDatetimeValue(diffDate2)}
               onchange={(e) => (diffDate2 = fromLocalDatetimeValue((e.target as HTMLInputElement).value))}
             />
+            <button class="btn" onclick={() => openNativePicker(diffDate2Input)}>选择</button>
             <button class="btn" onclick={() => (diffDate2 = nowLocalMinuteStr())}>当前</button>
           </div>
         </div>
@@ -431,6 +512,18 @@
           {/each}
         </div>
       {/if}
+      <div class="mt-4 border-t pt-4">
+        <div class="mb-2 text-sm font-semibold">时间差历史（最多 20 条）</div>
+        {#if diffHistory.length === 0}
+          <div class="text-sm text-muted-foreground">暂无历史记录</div>
+        {:else}
+          <div class="space-y-2">
+            {#each diffHistory as item}
+              <div class="rounded-md bg-muted px-3 py-2 font-mono text-xs">{item}</div>
+            {/each}
+          </div>
+        {/if}
+      </div>
     </section>
   {/if}
 </div>

@@ -119,6 +119,7 @@ pub fn run() {
             git_workflow::git_workflow_commit,
             git_workflow::git_workflow_push,
             http_fetch::http_fetch_get,
+            http_fetch::http_replay_send,
             local_dev_config::scan_local_dev_configs,
         ])
         .run(tauri::generate_context!())

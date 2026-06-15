@@ -162,7 +162,7 @@ function tryParseObjectLiteral(raw: string, preferredRootName: string): ParsedMo
 }
 
 function tryParseTableLike(raw: string, preferredRootName: string): ParsedModel | null {
-  const swaggerTsv = parseSwaggerTsvTable(raw);
+  const swaggerTsv = hasUnionTypeInTable(raw) ? null : parseSwaggerTsvTable(raw);
   if (swaggerTsv) {
     return {
       rootName: toTypeName(preferredRootName),
@@ -290,6 +290,19 @@ function tryParseSwaggerMarkdown(raw: string, preferredRootName: string): Parsed
   };
 }
 
+function hasUnionTypeInTable(raw: string): boolean {
+  return raw.split(/\r?\n/).some((line) => {
+    const trimmed = line.trim();
+    if (!trimmed) return false;
+    if (trimmed.includes("\t")) {
+      const cols = trimmed.split("\t").map((part) => part.trim()).filter(Boolean);
+      const typeCell = cols[cols.length - 1] ?? "";
+      return typeCell.includes("|");
+    }
+    return /\|\s*(null|string|number|boolean|integer|int)\b/i.test(trimmed);
+  });
+}
+
 function splitColumns(line: string): string[] {
   if (line.includes("\t")) {
     return line
@@ -318,8 +331,12 @@ function findTypeColumn(cols: string[]): string | null {
 
 function looksLikeTypeToken(text: string): boolean {
   const t = text.trim();
+  if (/^null$/i.test(t)) return true;
+  if (t.includes("|")) {
+    return t.split("|").every((part) => looksLikeTypeToken(part.trim()));
+  }
   const primitiveLike = /^(integer|int|number|string|boolean|bool|array|object)(\(.+\)|\[\])?$/i.test(t);
-  const namedLike = /^[A-Z][A-Za-z0-9_]*(\[\])?$/.test(t);
+  const namedLike = /^[A-Z][A-Za-z0-9_]*(\[\])?(<[^>]+>)?$/i.test(t);
   return primitiveLike || namedLike;
 }
 
@@ -328,6 +345,25 @@ function parseTypeText(typeText: string): { type: TypeNode; warnings: string[] }
   const warnings: string[] = [];
   const lower = t.toLowerCase();
 
+  if (t.includes("|")) {
+    const members: TypeNode[] = [];
+    for (const part of t.split("|").map((p) => p.trim()).filter(Boolean)) {
+      if (/^null$/i.test(part)) {
+        members.push({ kind: "literal", value: null });
+        continue;
+      }
+      const parsed = parseTypeText(part);
+      if (parsed.type.kind === "union") members.push(...parsed.type.members);
+      else members.push(parsed.type);
+      warnings.push(...parsed.warnings);
+    }
+    if (members.length === 0) {
+      warnings.push(`未识别类型 "${typeText}"，已回退为 unknown`);
+      return { type: { kind: "primitive", name: "unknown" }, warnings };
+    }
+    return { type: dedupeUnionMembers(members), warnings };
+  }
+
   if (lower.endsWith("[]")) {
     const base = parseTypeText(t.slice(0, -2));
     return { type: { kind: "array", element: base.type }, warnings: base.warnings };
@@ -335,6 +371,13 @@ function parseTypeText(typeText: string): { type: TypeNode; warnings: string[] }
   if (lower.startsWith("array<") && t.endsWith(">")) {
     const base = parseTypeText(t.slice(6, -1));
     return { type: { kind: "array", element: base.type }, warnings: base.warnings };
+  }
+  if (lower.startsWith("list<") && t.endsWith(">")) {
+    const base = parseTypeText(t.slice(5, -1));
+    return { type: { kind: "array", element: base.type }, warnings: base.warnings };
+  }
+  if (/^null$/i.test(t)) {
+    return { type: { kind: "literal", value: null }, warnings };
   }
   if (lower.startsWith("integer") || lower === "int" || lower.startsWith("number") || lower === "float" || lower === "double") {
     return { type: { kind: "primitive", name: "number" }, warnings };
@@ -589,7 +632,15 @@ function typeFromJsonSchema(schema: JsonSchema, context: SchemaContext): TypeNod
     return maybeNullable({ kind: "union", members: dedupeTypeNodes(members) }, schema, context);
   }
 
-  const schemaType = typeof schema.type === "string" ? schema.type : undefined;
+  const schemaTypes = getSchemaTypeList(schema);
+  if (schemaTypes && schemaTypes.length > 1) {
+    const members = schemaTypes.map((schemaType) =>
+      typeFromJsonSchemaType(schemaType, schema, context, { skipTypeList: true }),
+    );
+    return dedupeUnionMembers(members);
+  }
+
+  const schemaType = schemaTypes?.[0];
   if (schemaType === "array") {
     const items = toSchema(schema.items);
     return maybeNullable({ kind: "array", element: typeFromJsonSchema(items, context) }, schema, context);
@@ -624,7 +675,74 @@ function typeFromJsonSchema(schema: JsonSchema, context: SchemaContext): TypeNod
     return maybeNullable({ kind: "object", fields, indexSignature }, schema, context);
   }
 
+  if (schemaTypes && schemaTypes.length > 0) {
+    context.warnings.push(`未识别的 schema.type（${schemaTypes.join(", ")}），已回退为 unknown`);
+  }
   return maybeNullable({ kind: "primitive", name: "unknown" }, schema, context);
+}
+
+function getSchemaTypeList(schema: JsonSchema): string[] | undefined {
+  if (typeof schema.type === "string") return [schema.type];
+  if (Array.isArray(schema.type)) {
+    const types = schema.type.filter((value): value is string => typeof value === "string");
+    return types.length > 0 ? types : undefined;
+  }
+  return undefined;
+}
+
+function typeFromJsonSchemaType(
+  schemaType: string,
+  schema: JsonSchema,
+  context: SchemaContext,
+  options: { skipTypeList?: boolean } = {},
+): TypeNode {
+  const narrowedSchema = options.skipTypeList ? { ...schema, type: schemaType } : schema;
+  if (schemaType === "array") {
+    const items = toSchema(narrowedSchema.items);
+    return maybeNullable({ kind: "array", element: typeFromJsonSchema(items, context) }, narrowedSchema, context);
+  }
+  if (schemaType === "integer" || schemaType === "number") {
+    return maybeNullable({ kind: "primitive", name: "number" }, narrowedSchema, context);
+  }
+  if (schemaType === "boolean") {
+    return maybeNullable({ kind: "primitive", name: "boolean" }, narrowedSchema, context);
+  }
+  if (schemaType === "string") {
+    return maybeNullable({ kind: "primitive", name: "string" }, narrowedSchema, context);
+  }
+  if (schemaType === "null") return { kind: "literal", value: null };
+
+  const properties = toRecord(narrowedSchema.properties);
+  if (schemaType === "object" || properties) {
+    const requiredSet = new Set<string>(
+      Array.isArray(narrowedSchema.required)
+        ? narrowedSchema.required.filter((v): v is string => typeof v === "string")
+        : [],
+    );
+    const fields: FieldNode[] = [];
+    if (properties) {
+      for (const [key, value] of Object.entries(properties)) {
+        const child = toSchema(value);
+        fields.push({
+          name: key,
+          optional: !requiredSet.has(key),
+          description: typeof child.description === "string" ? child.description : undefined,
+          type: typeFromJsonSchema(child, context),
+        });
+      }
+    }
+    const additional = narrowedSchema.additionalProperties;
+    let indexSignature: TypeNode | undefined;
+    if (additional === true) {
+      indexSignature = { kind: "primitive", name: "unknown" };
+    } else if (additional && typeof additional === "object") {
+      indexSignature = typeFromJsonSchema(additional as JsonSchema, context);
+    }
+    return maybeNullable({ kind: "object", fields, indexSignature }, narrowedSchema, context);
+  }
+
+  context.warnings.push(`未识别的 schema.type（${schemaType}），已回退为 unknown`);
+  return { kind: "primitive", name: "unknown" };
 }
 
 function resolveRefSchema(schema: JsonSchema, context: SchemaContext): JsonSchema {

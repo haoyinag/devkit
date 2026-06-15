@@ -2,7 +2,7 @@
   import { ALL_TOOLS, TOOL_CATEGORIES } from "@/lib/tools";
   import { detectContent } from "@/lib/clipboard-detect";
   import type { Page } from "@/types";
-  import { Blocks, Clock3, ClipboardPaste, ExternalLink, FolderKanban, History, MousePointer2, Repeat2, Scale, Sparkles, Type, Workflow, X, Zap, ArrowUp } from "@lucide/svelte";
+  import { Blocks, Clock3, ClipboardPaste, ExternalLink, FolderKanban, History, MousePointer2, Repeat2, Scale, SendHorizontal, Sparkles, Type, Workflow, X, Zap, ArrowUp } from "@lucide/svelte";
 
   interface Props {
     recent: string[];
@@ -24,6 +24,7 @@
     time: Clock3,
     cursor: MousePointer2,
     workflow: Workflow,
+    api: SendHorizontal,
   };
 
   const runDetect = (value: string) => {

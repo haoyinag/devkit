@@ -88,6 +88,9 @@
 <div class="tool-page-shell overflow-auto p-5">
   <div class="tool-page-header">
     <h2 class="tool-page-title">TypeScript 类型生成</h2>
+    <p class="mt-1 text-sm text-muted-foreground">
+      支持 JSON 示例、OpenAPI/Swagger、Knife4j 参数表、对象字面量；多接口时会自动选择并给出提示。
+    </p>
   </div>
 
   <div class="tool-page-actions">

@@ -1,6 +1,8 @@
 <script lang="ts">
   import type { Page } from "@/types";
   import Base64Tool from "@app/components/tools/Base64Tool.svelte";
+  import ApiDebugTool from "@app/components/tools/ApiDebugTool.svelte";
+  import CalculatorTool from "@app/components/tools/CalculatorTool.svelte";
   import ColorTool from "@app/components/tools/ColorTool.svelte";
   import CursorRulesTool from "@app/components/tools/CursorRulesTool.svelte";
   import CronTool from "@app/components/tools/CronTool.svelte";
@@ -35,6 +37,8 @@
 <div class="flex h-full flex-col gap-3 overflow-auto p-5">
   {#if page === "json"}
     <JsonTool initialContent={initialContent} />
+  {:else if page === "api-debug"}
+    <ApiDebugTool />
   {:else if page === "base64"}
     <Base64Tool initialContent={initialContent} />
   {:else if page === "url"}
@@ -49,6 +53,8 @@
     <RegexTool />
   {:else if page === "time"}
     <TimeTool />
+  {:else if page === "calculator"}
+    <CalculatorTool />
   {:else if page === "color"}
     <ColorTool />
   {:else if page === "diff"}

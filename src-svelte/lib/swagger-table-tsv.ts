@@ -31,9 +31,10 @@ function splitTableLine(line: string): string[] {
     .filter(Boolean);
 }
 
-/** 制表符被换成空格时：末尾为类型，开头为英文字段名，中间为说明 */
+/** 空格分隔兜底：含 union 写法时不猜测，交给上层通用表格解析 */
 function parseSpaceSeparatedSwaggerRow(line: string): string[] | null {
   const s = line.trim();
+  if (/\|\s*(null|string|number|boolean|integer|int)\b/i.test(s)) return null;
   const tight = s.match(
     /^([a-zA-Z_][a-zA-Z0-9_]*)\s+(integer|number|string|boolean|int|long|float|double)(\s*\([^)]*\))?\s*$/i,
   );
