@@ -24,6 +24,7 @@
     type EditableEntry,
     type RequestBodyMode,
   } from "@/lib/request-replay";
+  import ResponseInspector from "@app/components/tools/api-debug/ResponseInspector.svelte";
   import RequestEntryEditor from "@app/components/tools/request-replay/RequestEntryEditor.svelte";
   import { Braces, ChevronDown, ChevronUp, Clock3, Copy, History, Play, RotateCcw, Trash2, WandSparkles } from "@lucide/svelte";
 
@@ -876,12 +877,11 @@ request body:
           <button class="btn mb-2" onclick={() => saveScenario(currentSnapshot(), response)}>保存为场景</button>
           <button class="btn mb-2" onclick={() => openMockDraft(currentSnapshot(), response)}>转为 Mock</button>
         </div>
-        <textarea
-          class="min-h-72 w-full resize-y rounded-none border-0 bg-transparent p-4 font-mono text-sm"
-          readonly
-          value={responseTab === "body" ? formattedResponseBody : responseHeaderText}
-          spellcheck="false"
-        ></textarea>
+        <ResponseInspector
+          kind={responseTab}
+          text={responseTab === "body" ? formattedResponseBody : responseHeaderText}
+          headers={response.headers}
+        />
       </section>
     {/if}
 
